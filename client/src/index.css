@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+}
+
+/* Custom design system utility styles */
+.card-surface {
+  @apply bg-white border border-slate-200 rounded-lg shadow-sm;
+}
+
+.badge-success {
+  @apply bg-semantic-successBg text-semantic-success border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1;
+}
+
+.badge-warning {
+  @apply bg-semantic-warningBg text-semantic-warning border border-amber-200 px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1;
+}
+
+.badge-danger {
+  @apply bg-semantic-dangerBg text-semantic-danger border border-red-200 px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1;
+}
+
+.badge-info {
+  @apply bg-brand-lightBlue text-brand-blue border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1;
+}
