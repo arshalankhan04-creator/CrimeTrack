@@ -40,16 +40,19 @@ export default function OfficerDashboard() {
           <p className="text-xs text-slate-500 mt-1">Create & manage citizen FIR complaints</p>
         </Link>
 
-        <div className="card-surface p-5">
+        <Link to="/cases" className="card-surface p-5 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">My Cases</span>
-            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition">
               <Briefcase className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-xl font-bold text-navy-900 mt-2">M5 Scope</p>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-lg font-bold text-navy-900">Case Files</span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">M5 Live</span>
+          </div>
           <p className="text-xs text-slate-500 mt-1">Assigned case files & status updates</p>
-        </div>
+        </Link>
 
         <div className="card-surface p-5">
           <div className="flex items-center justify-between">

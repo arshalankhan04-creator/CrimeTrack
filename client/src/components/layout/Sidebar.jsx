@@ -33,7 +33,7 @@ export default function Sidebar() {
       ? [{ name: 'User Management (M3)', path: '/users', icon: Users, disabled: false, badge: 'Live' }]
       : []),
     { name: 'FIR Management (M4)', path: '/firs', icon: FileText, disabled: false, badge: 'Live' },
-    { name: 'Case Management (M5)', path: '/cases', icon: Briefcase, disabled: true },
+    { name: 'Case Management (M5)', path: '/cases', icon: Briefcase, disabled: false, badge: 'Live' },
     { name: 'Criminal Registry (M6)', path: '/criminals', icon: Users, disabled: true },
     { name: 'Investigations (M7)', path: '/investigations', icon: FileSearch, disabled: true },
     { name: 'Analytics & Reports (M8-10)', path: '/reports', icon: BarChart3, disabled: true },

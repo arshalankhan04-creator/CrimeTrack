@@ -56,20 +56,20 @@ export default function AdminDashboard() {
           <p className="text-xs text-slate-500 mt-1">Global view of registered FIR complaints</p>
         </Link>
 
-        {/* Global Cases (M5 Scope) */}
-        <div className="card-surface p-5 opacity-80">
+        {/* Global Cases (M5 Live) */}
+        <Link to="/cases" className="card-surface p-5 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Case Files</span>
-            <div className="p-2 bg-slate-100 text-slate-500 rounded-lg">
+            <div className="p-2 bg-blue-50 text-brand-blue rounded-lg group-hover:bg-brand-blue group-hover:text-white transition">
               <Briefcase className="w-5 h-5" />
             </div>
           </div>
           <div className="flex items-center justify-between mt-3">
-            <span className="text-lg font-bold text-slate-700">Case Management</span>
-            <span className="text-[10px] bg-blue-100 text-brand-blue font-bold px-2 py-0.5 rounded">M5 Next</span>
+            <span className="text-lg font-bold text-navy-900">Case Management</span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">M5 Live</span>
           </div>
           <p className="text-xs text-slate-500 mt-1">Assign & monitor cases across all stations</p>
-        </div>
+        </Link>
 
         {/* System Audit Logs (M11 Scope) */}
         <div className="card-surface p-5 opacity-80">

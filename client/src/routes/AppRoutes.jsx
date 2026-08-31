@@ -6,6 +6,7 @@ import Login from '../pages/auth/Login';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import Users from '../pages/admin/Users';
 import FIRs from '../pages/fir/FIRs';
+import Cases from '../pages/cases/Cases';
 import OfficerDashboard from '../pages/officer/OfficerDashboard';
 import ViewerDashboard from '../pages/viewer/ViewerDashboard';
 import Unauthorized from '../pages/Unauthorized';
@@ -71,6 +72,18 @@ export default function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <FIRs />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Case Management (Admin, Officer, Viewer) */}
+      <Route
+        path="/cases"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Cases />
             </Layout>
           </ProtectedRoute>
         }
