@@ -1,6 +1,7 @@
 const app = require('./app');
 const config = require('./config/environment');
 const { connectDatabase } = require('./config/database');
+const { seedInitialUsers } = require('./utils/seedAdmin');
 
 const startServer = async () => {
   console.log('====================================================');
@@ -15,10 +16,14 @@ const startServer = async () => {
     console.log('====================================================');
   });
 
-  // Connect to MongoDB (non-blocking in development)
-  connectDatabase().catch((err) => {
-    console.warn(`[Database] Initial MongoDB connection attempt: ${err.message}`);
-  });
+  // Connect to MongoDB and seed initial accounts
+  connectDatabase()
+    .then(async () => {
+      await seedInitialUsers();
+    })
+    .catch((err) => {
+      console.warn(`[Database] Initial MongoDB connection attempt: ${err.message}`);
+    });
 
   // Handle process termination gracefully
   const shutdown = () => {
