@@ -4,6 +4,7 @@ import Layout from '../components/layout/Layout';
 import FoundationStatus from '../pages/FoundationStatus';
 import Login from '../pages/auth/Login';
 import AdminDashboard from '../pages/admin/AdminDashboard';
+import Users from '../pages/admin/Users';
 import OfficerDashboard from '../pages/officer/OfficerDashboard';
 import ViewerDashboard from '../pages/viewer/ViewerDashboard';
 import Unauthorized from '../pages/Unauthorized';
@@ -42,6 +43,20 @@ export default function AppRoutes() {
             <RoleRoute allowedRoles={['ADMIN']}>
               <Layout>
                 <AdminDashboard />
+              </Layout>
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin User Management */}
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={['ADMIN']}>
+              <Layout>
+                <Users />
               </Layout>
             </RoleRoute>
           </ProtectedRoute>

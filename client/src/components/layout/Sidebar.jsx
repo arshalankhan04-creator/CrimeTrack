@@ -29,7 +29,9 @@ export default function Sidebar() {
   ];
 
   const operationalNavItems = [
-    { name: 'User Management (M3)', path: '/users', icon: Users, disabled: true, adminOnly: true },
+    ...(user?.role === 'ADMIN'
+      ? [{ name: 'User Management (M3)', path: '/users', icon: Users, disabled: false, badge: 'Live' }]
+      : []),
     { name: 'FIR Management (M4)', path: '/firs', icon: FileText, disabled: true },
     { name: 'Case Management (M5)', path: '/cases', icon: Briefcase, disabled: true },
     { name: 'Criminal Registry (M6)', path: '/criminals', icon: Users, disabled: true },
