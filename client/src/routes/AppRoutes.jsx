@@ -5,6 +5,7 @@ import FoundationStatus from '../pages/FoundationStatus';
 import Login from '../pages/auth/Login';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import Users from '../pages/admin/Users';
+import FIRs from '../pages/fir/FIRs';
 import OfficerDashboard from '../pages/officer/OfficerDashboard';
 import ViewerDashboard from '../pages/viewer/ViewerDashboard';
 import Unauthorized from '../pages/Unauthorized';
@@ -59,6 +60,18 @@ export default function AppRoutes() {
                 <Users />
               </Layout>
             </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* FIR Management (Admin, Officer, Viewer) */}
+      <Route
+        path="/firs"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <FIRs />
+            </Layout>
           </ProtectedRoute>
         }
       />

@@ -179,35 +179,72 @@ export default function FoundationStatus() {
         </div>
       </div>
 
-      {/* Next Milestones Progress Overview */}
+      {/* Implementation Roadmap Progress Overview */}
       <div className="card-surface p-6">
-        <h2 className="text-base font-semibold text-navy-900 flex items-center gap-2">
-          <Shield className="w-4 h-4 text-brand-blue" />
-          CrimeTrack Implementation Roadmap
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold text-navy-900 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-brand-blue" />
+            CrimeTrack Implementation Roadmap & Milestones
+          </h2>
+          <span className="badge-success">4 / 15 Milestones Completed</span>
+        </div>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">M1 COMPLETED</span>
+          <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-lg">
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+              <CheckCircle2 className="w-3 h-3" /> M1 COMPLETED
+            </span>
             <p className="font-semibold text-xs text-navy-900 mt-2">Project Foundation</p>
             <p className="text-[11px] text-slate-600 mt-1">Express, MongoDB, React, Vite, Tailwind CSS, Health Endpoint.</p>
           </div>
 
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
-            <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded">M2 NEXT</span>
+          <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-lg">
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+              <CheckCircle2 className="w-3 h-3" /> M2 COMPLETED
+            </span>
             <p className="font-semibold text-xs text-navy-900 mt-2">Auth & Authorization</p>
-            <p className="text-[11px] text-slate-600 mt-1">JWT, bcrypt, Role & Ownership Middleware, User Schemas.</p>
+            <p className="text-[11px] text-slate-600 mt-1">JWT, bcrypt, RBAC middleware, Login portal, Multi-role dashboards.</p>
           </div>
 
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg opacity-75">
-            <span className="text-[10px] font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded">M3 QUEUED</span>
+          <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-lg">
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+              <CheckCircle2 className="w-3 h-3" /> M3 COMPLETED
+            </span>
             <p className="font-semibold text-xs text-navy-900 mt-2">User Management</p>
-            <p className="text-[11px] text-slate-600 mt-1">Admin Officer & Viewer creation, supervision assignment.</p>
+            <p className="text-[11px] text-slate-600 mt-1">Admin Officer/Viewer creation, supervisor assignment, audit integration.</p>
+          </div>
+
+          <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-lg">
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+              <CheckCircle2 className="w-3 h-3" /> M4 COMPLETED
+            </span>
+            <p className="font-semibold text-xs text-navy-900 mt-2">FIR Management</p>
+            <p className="text-[11px] text-slate-600 mt-1">FIR registration, officer scoping, search/filter, printable police sheet.</p>
+          </div>
+
+          <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-lg">
+            <span className="text-[10px] font-bold text-brand-blue bg-blue-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+              M5 UPCOMING
+            </span>
+            <p className="font-semibold text-xs text-navy-900 mt-2">Case Management</p>
+            <p className="text-[11px] text-slate-600 mt-1">Case creation, FIR linkage, status lifecycle, history tracking.</p>
           </div>
 
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg opacity-75">
-            <span className="text-[10px] font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded">M4 QUEUED</span>
-            <p className="font-semibold text-xs text-navy-900 mt-2">FIR Management</p>
-            <p className="text-[11px] text-slate-600 mt-1">FIR registration, officer ownership, status tracking.</p>
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded">M6 QUEUED</span>
+            <p className="font-semibold text-xs text-navy-900 mt-2">Crimes & Criminals</p>
+            <p className="text-[11px] text-slate-600 mt-1">Crime classification, minimal global criminal search, suspect linking.</p>
+          </div>
+
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg opacity-75">
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded">M7 QUEUED</span>
+            <p className="font-semibold text-xs text-navy-900 mt-2">Investigations</p>
+            <p className="text-[11px] text-slate-600 mt-1">Investigation timeline notes, evidence attachments, case history.</p>
+          </div>
+
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg opacity-75">
+            <span className="text-[10px] font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded">M8–M15</span>
+            <p className="font-semibold text-xs text-navy-900 mt-2">Analytics & Polish</p>
+            <p className="text-[11px] text-slate-600 mt-1">Reports, Audit Logs, Undo/Redo, Testing, and Production Polish.</p>
           </div>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Eye, Shield, Lock, FileText, Briefcase, Info } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function ViewerDashboard() {
@@ -25,16 +26,19 @@ export default function ViewerDashboard() {
 
       {/* Accessible Scopes */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="card-surface p-5">
+        <Link to="/firs" className="card-surface p-5 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Supervisor FIRs</span>
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-600 group-hover:text-white transition">
               <FileText className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-xl font-bold text-navy-900 mt-2">Read-Only</p>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-lg font-bold text-navy-900">FIR Complaints</span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">M4 Live (Read)</span>
+          </div>
           <p className="text-xs text-slate-500 mt-1">View FIRs registered by supervisor</p>
-        </div>
+        </Link>
 
         <div className="card-surface p-5">
           <div className="flex items-center justify-between">

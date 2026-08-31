@@ -1,5 +1,6 @@
 import React from 'react';
-import { Shield, Users, Briefcase, FileText, Activity, KeyRound, AlertTriangle } from 'lucide-react';
+import { Shield, Users, Briefcase, FileText, Activity, KeyRound, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminDashboard() {
@@ -25,48 +26,64 @@ export default function AdminDashboard() {
 
       {/* Global Administrative Capabilities */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="card-surface p-5">
+        {/* User Management (M3 Live) */}
+        <Link to="/users" className="card-surface p-5 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">User Hierarchy</span>
-            <div className="p-2 bg-blue-50 text-brand-blue rounded-lg">
+            <div className="p-2 bg-blue-50 text-brand-blue rounded-lg group-hover:bg-brand-blue group-hover:text-white transition">
               <Users className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-xl font-bold text-navy-900 mt-2">M3 Scope</p>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-lg font-bold text-navy-900">User Console</span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">M3 Live</span>
+          </div>
           <p className="text-xs text-slate-500 mt-1">Manage Officers, Viewers & Supervisions</p>
-        </div>
+        </Link>
 
-        <div className="card-surface p-5">
+        {/* FIR Management (M4 Live) */}
+        <Link to="/firs" className="card-surface p-5 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Global Cases</span>
-            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
-              <Briefcase className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-xl font-bold text-navy-900 mt-2">M5 Scope</p>
-          <p className="text-xs text-slate-500 mt-1">Assign & monitor cases across all stations</p>
-        </div>
-
-        <div className="card-surface p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">System Logs</span>
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-              <KeyRound className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-xl font-bold text-navy-900 mt-2">M11 Scope</p>
-          <p className="text-xs text-slate-500 mt-1">Audit Trail & Authentication Logs</p>
-        </div>
-
-        <div className="card-surface p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Global Reports</span>
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">FIR Incident Registry</span>
+            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition">
               <FileText className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-xl font-bold text-navy-900 mt-2">M10 Scope</p>
-          <p className="text-xs text-slate-500 mt-1">Export PDF/Excel crime analytics</p>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-lg font-bold text-navy-900">FIR Registry</span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">M4 Live</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Global view of registered FIR complaints</p>
+        </Link>
+
+        {/* Global Cases (M5 Scope) */}
+        <div className="card-surface p-5 opacity-80">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Case Files</span>
+            <div className="p-2 bg-slate-100 text-slate-500 rounded-lg">
+              <Briefcase className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-lg font-bold text-slate-700">Case Management</span>
+            <span className="text-[10px] bg-blue-100 text-brand-blue font-bold px-2 py-0.5 rounded">M5 Next</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Assign & monitor cases across all stations</p>
+        </div>
+
+        {/* System Audit Logs (M11 Scope) */}
+        <div className="card-surface p-5 opacity-80">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">System Logs</span>
+            <div className="p-2 bg-slate-100 text-slate-500 rounded-lg">
+              <KeyRound className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-lg font-bold text-slate-700">Audit Trail</span>
+            <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded">M11 Scope</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Immutable administrative audit log records</p>
         </div>
       </div>
 
