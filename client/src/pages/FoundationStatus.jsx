@@ -186,7 +186,7 @@ export default function FoundationStatus() {
             <Shield className="w-4 h-4 text-brand-blue" />
             CrimeTrack Implementation Roadmap & Milestones
           </h2>
-          <span className="badge-success">7 / 15 Milestones Completed</span>
+          <span className="badge-success">8 / 15 Milestones Completed</span>
         </div>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-lg">
@@ -245,12 +245,12 @@ export default function FoundationStatus() {
             <p className="text-[11px] text-slate-600 mt-1">Chronological investigation journal, stage progression, evidence tracking.</p>
           </div>
 
-          <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-lg">
-            <span className="text-[10px] font-bold text-brand-blue bg-blue-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
-              M8–M10 UPCOMING
+          <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-lg">
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+              <CheckCircle2 className="w-3 h-3" /> M8 COMPLETED
             </span>
-            <p className="font-semibold text-xs text-navy-900 mt-2">Dashboards & Reports</p>
-            <p className="text-[11px] text-slate-600 mt-1">Analytics charts, advanced search, PDF/Excel export reports.</p>
+            <p className="font-semibold text-xs text-navy-900 mt-2">Dashboard Metrics & Charts</p>
+            <p className="text-[11px] text-slate-600 mt-1">Role-scoped KPIs, crime category distributions, status pipelines, trends.</p>
           </div>
         </div>
       </div>
