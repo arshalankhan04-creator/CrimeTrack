@@ -54,16 +54,19 @@ export default function ViewerDashboard() {
           <p className="text-xs text-slate-500 mt-1">View active cases & investigation timeline</p>
         </Link>
 
-        <div className="card-surface p-5">
+        <Link to="/criminals" className="card-surface p-5 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Audit & Logs</span>
-            <div className="p-2 bg-red-50 text-red-600 rounded-lg">
-              <Lock className="w-5 h-5" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Offender Registry</span>
+            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition">
+              <Users className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-xl font-bold text-red-600 mt-2">Restricted</p>
-          <p className="text-xs text-slate-500 mt-1">System logs & mutation APIs are blocked</p>
-        </div>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-lg font-bold text-navy-900">Offender Registry</span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">M6 Live (Read)</span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">View scoped suspect & criminal records</p>
+        </Link>
       </div>
 
       {/* Strict Read-Only Notice */}

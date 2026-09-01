@@ -186,7 +186,7 @@ export default function FoundationStatus() {
             <Shield className="w-4 h-4 text-brand-blue" />
             CrimeTrack Implementation Roadmap & Milestones
           </h2>
-          <span className="badge-success">5 / 15 Milestones Completed</span>
+          <span className="badge-success">6 / 15 Milestones Completed</span>
         </div>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-lg">
@@ -229,16 +229,18 @@ export default function FoundationStatus() {
             <p className="text-[11px] text-slate-600 mt-1">Case creation, FIR linkage, status lifecycle, history tracking, reassignment.</p>
           </div>
 
-          <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-lg">
-            <span className="text-[10px] font-bold text-brand-blue bg-blue-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
-              M6 UPCOMING
+          <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-lg">
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+              <CheckCircle2 className="w-3 h-3" /> M6 COMPLETED
             </span>
             <p className="font-semibold text-xs text-navy-900 mt-2">Crimes & Criminals</p>
-            <p className="text-[11px] text-slate-600 mt-1">Crime classification, minimal global criminal search, suspect linking.</p>
+            <p className="text-[11px] text-slate-600 mt-1">Crime classification, minimal privacy search, criminal case linkage.</p>
           </div>
 
-          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg opacity-75">
-            <span className="text-[10px] font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded">M7 QUEUED</span>
+          <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-lg">
+            <span className="text-[10px] font-bold text-brand-blue bg-blue-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+              M7 UPCOMING
+            </span>
             <p className="font-semibold text-xs text-navy-900 mt-2">Investigations</p>
             <p className="text-[11px] text-slate-600 mt-1">Investigation timeline notes, evidence attachments, case history.</p>
           </div>

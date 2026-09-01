@@ -54,16 +54,19 @@ export default function OfficerDashboard() {
           <p className="text-xs text-slate-500 mt-1">Assigned case files & status updates</p>
         </Link>
 
-        <div className="card-surface p-5">
+        <Link to="/criminals" className="card-surface p-5 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Criminal Registry</span>
-            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-lg group-hover:bg-amber-600 group-hover:text-white transition">
               <Users className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-xl font-bold text-navy-900 mt-2">M6 Scope</p>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-lg font-bold text-navy-900">Offender Registry</span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">M6 Live</span>
+          </div>
           <p className="text-xs text-slate-500 mt-1">Global search & case linking</p>
-        </div>
+        </Link>
 
         <div className="card-surface p-5">
           <div className="flex items-center justify-between">
