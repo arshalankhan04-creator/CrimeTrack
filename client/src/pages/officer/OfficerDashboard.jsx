@@ -68,16 +68,19 @@ export default function OfficerDashboard() {
           <p className="text-xs text-slate-500 mt-1">Global search & case linking</p>
         </Link>
 
-        <div className="card-surface p-5">
+        <Link to="/investigations" className="card-surface p-5 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Investigations</span>
-            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+            <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition">
               <FileSearch className="w-5 h-5" />
             </div>
           </div>
-          <p className="text-xl font-bold text-navy-900 mt-2">M7 Scope</p>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-lg font-bold text-navy-900">Investigation Timeline</span>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">M7 Live</span>
+          </div>
           <p className="text-xs text-slate-500 mt-1">Timeline entries & evidence notes</p>
-        </div>
+        </Link>
       </div>
 
       {/* Scope Restriction Info */}

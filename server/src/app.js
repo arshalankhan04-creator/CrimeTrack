@@ -8,6 +8,7 @@ const firRoutes = require('./routes/firRoutes');
 const caseRoutes = require('./routes/caseRoutes');
 const crimeRoutes = require('./routes/crimeRoutes');
 const criminalRoutes = require('./routes/criminalRoutes');
+const investigationRoutes = require('./routes/investigationRoutes');
 const { notFoundHandler, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
@@ -30,6 +31,7 @@ app.use('/api/firs', firRoutes);
 app.use('/api/cases', caseRoutes);
 app.use('/api/crimes', crimeRoutes);
 app.use('/api/criminals', criminalRoutes);
+app.use('/api/investigations', investigationRoutes);
 
 // Fallback for 404 & Central Error Handling
 app.use(notFoundHandler);

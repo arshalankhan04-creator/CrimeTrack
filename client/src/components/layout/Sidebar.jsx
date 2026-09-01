@@ -35,7 +35,7 @@ export default function Sidebar() {
     { name: 'FIR Management (M4)', path: '/firs', icon: FileText, disabled: false, badge: 'Live' },
     { name: 'Case Management (M5)', path: '/cases', icon: Briefcase, disabled: false, badge: 'Live' },
     { name: 'Criminal Registry (M6)', path: '/criminals', icon: Users, disabled: false, badge: 'Live' },
-    { name: 'Investigations (M7)', path: '/investigations', icon: FileSearch, disabled: true },
+    { name: 'Investigations (M7)', path: '/investigations', icon: FileSearch, disabled: false, badge: 'Live' },
     { name: 'Analytics & Reports (M8-10)', path: '/reports', icon: BarChart3, disabled: true },
     { name: 'Audit Logs (M11)', path: '/logs', icon: ShieldCheck, disabled: true, adminOnly: true },
   ];
