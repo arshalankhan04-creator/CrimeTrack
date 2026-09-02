@@ -17,9 +17,12 @@ import {
   FileCode,
   FileText,
   Activity,
-  ArrowRight
+  ArrowRight,
+  RotateCcw,
+  Undo2
 } from 'lucide-react';
 import auditService from '../../services/auditService';
+import recoveryService from '../../services/recoveryService';
 import { useAuth } from '../../context/AuthContext';
 
 const ACTIONS = [
@@ -126,7 +129,30 @@ export default function AuditLogs() {
     }
   };
 
+  const handleUndoMutation = async (logItem) => {
+    const confirm = window.confirm(
+      `Are you sure you want to revert the mutation '${logItem.action}' performed on ${logItem.entityType}? This will restore the previous snapshot values.`
+    );
+    if (!confirm) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await recoveryService.undoMutation(logItem._id);
+      setSuccessMsg(res.data.message || 'Mutation successfully reverted.');
+      setIsDiffModalOpen(false);
+      fetchLogs(page);
+    } catch (err) {
+      setError(err.message || 'Failed to revert mutation.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getActionBadge = (action) => {
+    if (action === 'UNDO_MUTATION') {
+      return <span className="text-[10px] bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1 w-fit"><RotateCcw className="w-3 h-3" /> UNDO_MUTATION</span>;
+    }
     if (action.startsWith('CREATE') || action.startsWith('REGISTER')) {
       return <span className="badge-success font-mono font-bold text-[10px]">{action}</span>;
     }
@@ -377,16 +403,27 @@ export default function AuditLogs() {
                       {log.newValues ? JSON.stringify(log.newValues) : '—'}
                     </td>
                     <td className="py-3 px-3 text-right">
-                      <button
-                        onClick={() => {
-                          setSelectedLog(log);
-                          setIsDiffModalOpen(true);
-                        }}
-                        className="p-1.5 hover:bg-slate-200 rounded text-slate-600 hover:text-navy-900 transition"
-                        title="Inspect Diff Record"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        {log.oldValues && Object.keys(log.oldValues).length > 0 && log.action !== 'UNDO_MUTATION' && (
+                          <button
+                            onClick={() => handleUndoMutation(log)}
+                            className="p-1.5 hover:bg-amber-100 rounded text-amber-700 transition"
+                            title="Revert Mutation (Undo)"
+                          >
+                            <Undo2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedLog(log);
+                            setIsDiffModalOpen(true);
+                          }}
+                          className="p-1.5 hover:bg-slate-200 rounded text-slate-600 hover:text-navy-900 transition"
+                          title="Inspect Diff Record"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -502,7 +539,18 @@ export default function AuditLogs() {
               )}
             </div>
 
-            <div className="p-4 border-t border-slate-100 flex justify-end bg-slate-50 shrink-0">
+            <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+              {selectedLog.oldValues && Object.keys(selectedLog.oldValues).length > 0 && selectedLog.action !== 'UNDO_MUTATION' ? (
+                <button
+                  onClick={() => handleUndoMutation(selectedLog)}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold text-xs shadow flex items-center gap-1.5 transition"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Revert This Mutation (Undo)</span>
+                </button>
+              ) : (
+                <div />
+              )}
               <button
                 onClick={() => setIsDiffModalOpen(false)}
                 className="px-4 py-2 bg-navy-900 text-white rounded-lg font-semibold text-xs shadow hover:bg-navy-800"

@@ -6,6 +6,7 @@ import Login from '../pages/auth/Login';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import Users from '../pages/admin/Users';
 import AuditLogs from '../pages/admin/AuditLogs';
+import RecoveryConsole from '../pages/admin/RecoveryConsole';
 import FIRs from '../pages/fir/FIRs';
 import Cases from '../pages/cases/Cases';
 import Criminals from '../pages/criminals/Criminals';
@@ -78,6 +79,20 @@ export default function AppRoutes() {
             <RoleRoute allowedRoles={['ADMIN']}>
               <Layout>
                 <AuditLogs />
+              </Layout>
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin Audit Recovery & Undo Console */}
+      <Route
+        path="/recovery"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={['ADMIN']}>
+              <Layout>
+                <RecoveryConsole />
               </Layout>
             </RoleRoute>
           </ProtectedRoute>
