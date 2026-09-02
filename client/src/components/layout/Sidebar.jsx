@@ -9,7 +9,9 @@ import {
   ShieldCheck,
   LayoutDashboard,
   Search,
-  MessageSquare
+  MessageSquare,
+  Zap,
+  Sparkles
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -47,10 +49,13 @@ export default function Sidebar() {
         ]
       : []),
     { name: 'Feedback Hub (M13)', path: '/feedback', icon: MessageSquare, badge: 'Live' },
+    ...(user?.role === 'ADMIN'
+      ? [{ name: 'QA Diagnostics (M14)', path: '/qa', icon: Zap, badge: 'Live' }]
+      : []),
   ];
 
   const upcomingNavItems = [
-    { name: 'QA & Testing (M14)', path: '/qa', icon: ShieldCheck },
+    { name: 'Final Polish (M15)', path: '/polish', icon: Sparkles },
   ];
 
   return (

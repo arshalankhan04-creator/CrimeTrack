@@ -7,6 +7,7 @@ import AdminDashboard from '../pages/admin/AdminDashboard';
 import Users from '../pages/admin/Users';
 import AuditLogs from '../pages/admin/AuditLogs';
 import RecoveryConsole from '../pages/admin/RecoveryConsole';
+import TestConsole from '../pages/admin/TestConsole';
 import Feedback from '../pages/feedback/Feedback';
 import FIRs from '../pages/fir/FIRs';
 import Cases from '../pages/cases/Cases';
@@ -94,6 +95,20 @@ export default function AppRoutes() {
             <RoleRoute allowedRoles={['ADMIN']}>
               <Layout>
                 <RecoveryConsole />
+              </Layout>
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin QA & Automated Diagnostic Suite */}
+      <Route
+        path="/qa"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={['ADMIN']}>
+              <Layout>
+                <TestConsole />
               </Layout>
             </RoleRoute>
           </ProtectedRoute>
