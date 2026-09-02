@@ -194,6 +194,13 @@ const seedModerateData = async () => {
       seededCriminals.push(doc);
     }
 
+    // Helper for dynamic dates relative to current runtime
+    const daysAgo = (days) => {
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      return d;
+    };
+
     // 5. Seed FIRs, Cases, and Crimes in Pairs
     console.log('[Seeder] Creating FIRs, Cases, and Incident Classifications...');
     const incidentTemplates = [
@@ -202,7 +209,7 @@ const seedModerateData = async () => {
         complainantName: 'Kishore Zaveri',
         complainantPhone: '+91 98111 22334',
         complainantAddress: '14 Opera House Arcade, Mumbai',
-        incidentDate: new Date('2026-02-10T22:30:00Z'),
+        incidentDate: daysAgo(120),
         incidentPlace: 'Shop 12, Zaveri Jewellers, Market St, Mumbai',
         description: 'Three armed assailants entered the jewellery showroom during closing hours, threatened security with firearms, and decamped with gold ornaments worth 45 Lakhs.',
         crimeType: 'ROBBERY',
@@ -222,7 +229,7 @@ const seedModerateData = async () => {
         complainantName: 'Meera Nambiar (CFO, Apex Logistics)',
         complainantPhone: '+91 98222 33445',
         complainantAddress: 'Apex Towers, Tech Zone 2, Bengaluru',
-        incidentDate: new Date('2026-02-18T14:15:00Z'),
+        incidentDate: daysAgo(60),
         incidentPlace: 'Corporate HQ, Electronic City, Bengaluru',
         description: 'Unauthorized fund transfer of INR 1.2 Crores executed via spoofed executive email requesting urgent vendor clearance.',
         crimeType: 'CYBERCRIME',
@@ -240,7 +247,7 @@ const seedModerateData = async () => {
         complainantName: 'Sunil Aggarwal',
         complainantPhone: '+91 98333 44556',
         complainantAddress: 'B-102 Grand Hyatt Enclave, Delhi',
-        incidentDate: new Date('2026-02-25T21:00:00Z'),
+        incidentDate: daysAgo(90),
         incidentPlace: 'Regal Banquet Hall, Airport Road, Delhi',
         description: 'Antique diamond necklace stolen from bride changing room during wedding reception festivities.',
         crimeType: 'THEFT',
@@ -258,7 +265,7 @@ const seedModerateData = async () => {
         complainantName: 'Ramesh Chowkidar',
         complainantPhone: '+91 98444 55667',
         complainantAddress: 'Plot 88 Industrial Area, Ghaziabad',
-        incidentDate: new Date('2026-03-01T02:00:00Z'),
+        incidentDate: daysAgo(35),
         incidentPlace: 'Warehouse 4, Old Mill Compound, Ghaziabad',
         description: 'Night watchman discovered deceased male victim with blunt-force trauma and gunshot wounds inside factory premises.',
         crimeType: 'HOMICIDE',
@@ -276,7 +283,7 @@ const seedModerateData = async () => {
         complainantName: 'Head Constable Dalbir Singh',
         complainantPhone: '+91 98555 66778',
         complainantAddress: 'Highway Patrol Post 14',
-        incidentDate: new Date('2026-03-05T23:45:00Z'),
+        incidentDate: daysAgo(10),
         incidentPlace: 'National Highway 48 Checkpoint, Sector 8',
         description: 'Vehicle interception led to seizure of 2.5 kg commercial contraband hidden inside modified spare tyre compartment.',
         crimeType: 'EXTORTION',
@@ -294,7 +301,7 @@ const seedModerateData = async () => {
         complainantName: 'Dr. Vivek Sengupta',
         complainantPhone: '+91 98666 77889',
         complainantAddress: 'Flat 12A, Palm Heights, Sector 62',
-        incidentDate: new Date('2026-03-10T19:00:00Z'),
+        incidentDate: daysAgo(5),
         incidentPlace: 'Palm Heights Tower 3, Sector 62, Noida',
         description: 'Apartment lock broken during family vacation. Electronics, cash, and luxury watches valued at 8.5 Lakhs missing.',
         crimeType: 'BURGLARY',

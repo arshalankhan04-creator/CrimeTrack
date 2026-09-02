@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const FIR = require('../models/FIR');
 const Case = require('../models/Case');
 const Crime = require('../models/Crime');
@@ -111,12 +112,14 @@ const getDashboardCharts = async (user) => {
   const caseQuery = { isDeleted: false };
 
   if (user.role === 'OFFICER') {
-    firQuery.assignedOfficerId = user.id;
-    caseQuery.assignedOfficerId = user.id;
+    const officerId = new mongoose.Types.ObjectId(user.id);
+    firQuery.assignedOfficerId = officerId;
+    caseQuery.assignedOfficerId = officerId;
   } else if (user.role === 'VIEWER') {
     if (user.supervisorOfficerId) {
-      firQuery.assignedOfficerId = user.supervisorOfficerId;
-      caseQuery.assignedOfficerId = user.supervisorOfficerId;
+      const supervisorId = new mongoose.Types.ObjectId(user.supervisorOfficerId);
+      firQuery.assignedOfficerId = supervisorId;
+      caseQuery.assignedOfficerId = supervisorId;
     }
   }
 
@@ -139,17 +142,28 @@ const getDashboardCharts = async (user) => {
     { $group: { _id: '$priority', count: { $sum: 1 } } },
   ]);
 
-  // 4. Monthly Incident Trend (Past 6 Months)
-  const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-  sixMonthsAgo.setDate(1);
-  sixMonthsAgo.setHours(0, 0, 0, 0);
+  // 4. Monthly Incident Trend (Past 6 Months with complete month sequence)
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const past6Months = [];
+  const now = new Date();
+
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    past6Months.push({
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      period: `${monthNames[d.getMonth()]} ${d.getFullYear()}`,
+      count: 0,
+    });
+  }
+
+  const startDate = new Date(past6Months[0].year, past6Months[0].month - 1, 1, 0, 0, 0, 0);
 
   const monthlyStats = await FIR.aggregate([
     {
       $match: {
         ...firQuery,
-        incidentDate: { $gte: sixMonthsAgo },
+        incidentDate: { $gte: startDate },
       },
     },
     {
@@ -161,15 +175,18 @@ const getDashboardCharts = async (user) => {
         count: { $sum: 1 },
       },
     },
-    { $sort: { '_id.year': 1, '_id.month': 1 } },
   ]);
 
-  // Format monthly stats into readable names
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const formattedMonthlyTrends = monthlyStats.map((item) => ({
-    period: `${monthNames[item._id.month - 1]} ${item._id.year}`,
-    count: item.count,
-  }));
+  // Merge counts into the 6 consecutive month slots
+  const formattedMonthlyTrends = past6Months.map((slot) => {
+    const match = monthlyStats.find(
+      (s) => s._id.year === slot.year && s._id.month === slot.month
+    );
+    return {
+      period: slot.period,
+      count: match ? match.count : 0,
+    };
+  });
 
   return {
     crimeTypes: crimeTypeStats.map((item) => ({ type: item._id, count: item.count })),
