@@ -7,6 +7,7 @@ import AdminDashboard from '../pages/admin/AdminDashboard';
 import Users from '../pages/admin/Users';
 import AuditLogs from '../pages/admin/AuditLogs';
 import RecoveryConsole from '../pages/admin/RecoveryConsole';
+import Feedback from '../pages/feedback/Feedback';
 import FIRs from '../pages/fir/FIRs';
 import Cases from '../pages/cases/Cases';
 import Criminals from '../pages/criminals/Criminals';
@@ -166,6 +167,18 @@ export default function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <Reports />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Citizen & Officer Feedback Subsystem (Admin, Officer, Viewer) */}
+      <Route
+        path="/feedback"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Feedback />
             </Layout>
           </ProtectedRoute>
         }

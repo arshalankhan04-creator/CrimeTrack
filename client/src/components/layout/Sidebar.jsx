@@ -8,7 +8,8 @@ import {
   BarChart3, 
   ShieldCheck,
   LayoutDashboard,
-  Search
+  Search,
+  MessageSquare
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -45,10 +46,11 @@ export default function Sidebar() {
           { name: 'Audit Recovery (M12)', path: '/recovery', icon: Activity, badge: 'Live' },
         ]
       : []),
+    { name: 'Feedback Hub (M13)', path: '/feedback', icon: MessageSquare, badge: 'Live' },
   ];
 
   const upcomingNavItems = [
-    { name: 'Feedback Subsystem (M13)', path: '/feedback', icon: ShieldCheck },
+    { name: 'QA & Testing (M14)', path: '/qa', icon: ShieldCheck },
   ];
 
   return (
