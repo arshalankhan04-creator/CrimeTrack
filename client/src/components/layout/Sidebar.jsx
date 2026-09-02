@@ -7,7 +7,8 @@ import {
   FileSearch, 
   BarChart3, 
   ShieldCheck,
-  LayoutDashboard
+  LayoutDashboard,
+  Search
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -28,16 +29,20 @@ export default function Sidebar() {
     { name: 'System Status (M1)', path: '/', icon: Activity, badge: 'Active' },
   ];
 
-  const operationalNavItems = [
+  const liveOperationalNavItems = [
     ...(user?.role === 'ADMIN'
-      ? [{ name: 'User Management (M3)', path: '/users', icon: Users, disabled: false, badge: 'Live' }]
+      ? [{ name: 'User Management (M3)', path: '/users', icon: Users, badge: 'Live' }]
       : []),
-    { name: 'FIR Management (M4)', path: '/firs', icon: FileText, disabled: false, badge: 'Live' },
-    { name: 'Case Management (M5)', path: '/cases', icon: Briefcase, disabled: false, badge: 'Live' },
-    { name: 'Criminal Registry (M6)', path: '/criminals', icon: Users, disabled: false, badge: 'Live' },
-    { name: 'Investigations (M7)', path: '/investigations', icon: FileSearch, disabled: false, badge: 'Live' },
-    { name: 'Analytics & Reports (M8-10)', path: '/reports', icon: BarChart3, disabled: true },
-    { name: 'Audit Logs (M11)', path: '/logs', icon: ShieldCheck, disabled: true, adminOnly: true },
+    { name: 'FIR Management (M4)', path: '/firs', icon: FileText, badge: 'Live' },
+    { name: 'Case Management (M5)', path: '/cases', icon: Briefcase, badge: 'Live' },
+    { name: 'Criminal Registry (M6)', path: '/criminals', icon: Users, badge: 'Live' },
+    { name: 'Investigations (M7)', path: '/investigations', icon: FileSearch, badge: 'Live' },
+    { name: 'Global Search (M9)', path: '/search', icon: Search, badge: 'Live' },
+  ];
+
+  const upcomingNavItems = [
+    { name: 'Reports & Export (M10)', path: '/reports', icon: BarChart3 },
+    { name: 'Audit Logs (M11)', path: '/logs', icon: ShieldCheck, adminOnly: true },
   ];
 
   return (
@@ -45,7 +50,7 @@ export default function Sidebar() {
       <div className="space-y-6">
         <div>
           <p className="px-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-            Navigation
+            Command Navigation
           </p>
           <nav className="mt-3 space-y-1">
             {/* Role-specific Dashboard if authenticated */}
@@ -97,16 +102,51 @@ export default function Sidebar() {
                 </NavLink>
               );
             })}
+
+            {/* Live Operational Modules */}
+            {isAuthenticated && (
+              <div className="pt-3">
+                <p className="px-3 pb-1 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
+                  Active Modules
+                </p>
+                {liveOperationalNavItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.name}
+                      to={item.path}
+                      className={({ isActive }) =>
+                        `flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg transition ${
+                          isActive
+                            ? 'bg-brand-blue text-white shadow-sm font-semibold'
+                            : 'text-slate-300 hover:bg-navy-800 hover:text-white'
+                        }`
+                      }
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-4 h-4 text-blue-400" />
+                        <span>{item.name}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                          {item.badge}
+                        </span>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </div>
+            )}
           </nav>
         </div>
 
         {/* Future Milestones Navigation */}
         <div>
           <p className="px-3 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
-            Future Modules
+            Upcoming Modules
           </p>
           <div className="mt-2 space-y-1">
-            {operationalNavItems.map((item) => {
+            {upcomingNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <div

@@ -186,9 +186,9 @@ export default function FoundationStatus() {
             <Shield className="w-4 h-4 text-brand-blue" />
             CrimeTrack Implementation Roadmap & Milestones
           </h2>
-          <span className="badge-success">8 / 15 Milestones Completed</span>
+          <span className="badge-success">9 / 15 Milestones Completed</span>
         </div>
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-lg">
             <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
               <CheckCircle2 className="w-3 h-3" /> M1 COMPLETED
@@ -251,6 +251,14 @@ export default function FoundationStatus() {
             </span>
             <p className="font-semibold text-xs text-navy-900 mt-2">Dashboard Metrics & Charts</p>
             <p className="text-[11px] text-slate-600 mt-1">Role-scoped KPIs, crime category distributions, status pipelines, trends.</p>
+          </div>
+
+          <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-lg">
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1 w-fit">
+              <CheckCircle2 className="w-3 h-3" /> M9 COMPLETED
+            </span>
+            <p className="font-semibold text-xs text-navy-900 mt-2">Advanced Global Search</p>
+            <p className="text-[11px] text-slate-600 mt-1">Cross-entity omni-search, multi-criteria filters, and privacy controls.</p>
           </div>
         </div>
       </div>

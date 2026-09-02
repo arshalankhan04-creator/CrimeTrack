@@ -9,6 +9,7 @@ import FIRs from '../pages/fir/FIRs';
 import Cases from '../pages/cases/Cases';
 import Criminals from '../pages/criminals/Criminals';
 import Investigations from '../pages/investigations/Investigations';
+import GlobalSearch from '../pages/search/GlobalSearch';
 import OfficerDashboard from '../pages/officer/OfficerDashboard';
 import ViewerDashboard from '../pages/viewer/ViewerDashboard';
 import Unauthorized from '../pages/Unauthorized';
@@ -110,6 +111,18 @@ export default function AppRoutes() {
           <ProtectedRoute>
             <Layout>
               <Investigations />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Global Search & Multi-Filter Query Engine (Admin, Officer, Viewer) */}
+      <Route
+        path="/search"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <GlobalSearch />
             </Layout>
           </ProtectedRoute>
         }
