@@ -99,7 +99,7 @@ export default function ViewerDashboard() {
         <Link to="/firs" className="card-surface p-4 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-navy-900">Supervisor FIRs</span>
-            <span className="badge-success">Live (Read)</span>
+            <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">View FIRs registered by supervisor</p>
         </Link>
@@ -107,7 +107,7 @@ export default function ViewerDashboard() {
         <Link to="/cases" className="card-surface p-4 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-navy-900">Case Files</span>
-            <span className="badge-success">Live (Read)</span>
+            <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">View active cases & investigation timeline</p>
         </Link>
@@ -115,7 +115,7 @@ export default function ViewerDashboard() {
         <Link to="/criminals" className="card-surface p-4 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-navy-900">Offender Registry</span>
-            <span className="badge-success">Live (Read)</span>
+            <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">View scoped suspect & criminal records</p>
         </Link>
@@ -123,7 +123,7 @@ export default function ViewerDashboard() {
         <Link to="/investigations" className="card-surface p-4 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-navy-900">Investigations</span>
-            <span className="badge-success">Live (Read)</span>
+            <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">View case timeline & evidence entries</p>
         </Link>

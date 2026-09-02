@@ -151,7 +151,7 @@ export default function AdminDashboard() {
           <Link to="/users" className="card-surface p-4 hover:border-brand-blue transition group block">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-navy-900">User Hierarchy</span>
-              <span className="badge-success">M3 Live</span>
+              <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">Manage Officers, Viewers & Supervisions</p>
           </Link>
@@ -159,7 +159,7 @@ export default function AdminDashboard() {
           <Link to="/firs" className="card-surface p-4 hover:border-brand-blue transition group block">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-navy-900">FIR Registry</span>
-              <span className="badge-success">M4 Live</span>
+              <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">Incident complaints & printable sheets</p>
           </Link>
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
           <Link to="/cases" className="card-surface p-4 hover:border-brand-blue transition group block">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-navy-900">Case Management</span>
-              <span className="badge-success">M5 Live</span>
+              <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
             </div>
             <p className="text-[11px] text-slate-600 mt-1">Investigation lifecycle & reassignment</p>
           </Link>
@@ -175,7 +175,7 @@ export default function AdminDashboard() {
           <Link to="/criminals" className="card-surface p-4 hover:border-brand-blue transition group block">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-navy-900">Criminal Registry</span>
-              <span className="badge-success">M6 Live</span>
+              <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">Identity master & privacy lookup</p>
           </Link>

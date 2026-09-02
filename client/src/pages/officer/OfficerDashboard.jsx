@@ -141,7 +141,7 @@ export default function OfficerDashboard() {
         <Link to="/firs" className="card-surface p-4 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-navy-900">My FIRs</span>
-            <span className="badge-success">M4 Live</span>
+            <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">Register & manage citizen FIR complaints</p>
         </Link>
@@ -149,7 +149,7 @@ export default function OfficerDashboard() {
         <Link to="/cases" className="card-surface p-4 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-navy-900">My Cases</span>
-            <span className="badge-success">M5 Live</span>
+            <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">Active case files & lifecycle updates</p>
         </Link>
@@ -157,7 +157,7 @@ export default function OfficerDashboard() {
         <Link to="/criminals" className="card-surface p-4 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-navy-900">Criminal Registry</span>
-            <span className="badge-success">M6 Live</span>
+            <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">Global lookup & case linkage</p>
         </Link>
@@ -165,7 +165,7 @@ export default function OfficerDashboard() {
         <Link to="/investigations" className="card-surface p-4 hover:border-brand-blue transition group block">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-navy-900">Investigations</span>
-            <span className="badge-success">M7 Live</span>
+            <span className="text-[10px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">Open &rarr;</span>
           </div>
           <p className="text-[11px] text-slate-500 mt-1">Journal timeline & evidence notes</p>
         </Link>
