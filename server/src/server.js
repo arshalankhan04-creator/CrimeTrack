@@ -26,16 +26,31 @@ const startServer = async () => {
     });
 
   // Handle process termination gracefully
-  const shutdown = () => {
+  const shutdown = async () => {
     console.log('\n[Server] Shutting down gracefully...');
-    server.close(() => {
+    server.close(async () => {
       console.log('[Server] HTTP server closed.');
+      try {
+        const mongoose = require('mongoose');
+        await mongoose.connection.close(false);
+        console.log('[Database] MongoDB connection closed safely.');
+      } catch (e) {
+        console.warn('[Database] Error closing MongoDB connection:', e.message);
+      }
       process.exit(0);
     });
   };
 
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('[Server Guard] Unhandled Rejection at:', promise, 'reason:', reason);
+  });
+
+  process.on('uncaughtException', (err) => {
+    console.error('[Server Guard] Uncaught Exception:', err);
+  });
 };
 
 startServer();
