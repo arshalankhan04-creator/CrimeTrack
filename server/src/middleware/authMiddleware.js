@@ -54,6 +54,19 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+/**
+ * Authorization Middleware: Checks User Role
+ */
+const authorize = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return errorResponse(res, `Access denied. Requires one of roles: ${allowedRoles.join(', ')}`, 403);
+    }
+    next();
+  };
+};
+
 module.exports = {
   authenticate,
+  authorize,
 };

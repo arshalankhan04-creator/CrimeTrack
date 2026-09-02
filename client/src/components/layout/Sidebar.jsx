@@ -39,10 +39,13 @@ export default function Sidebar() {
     { name: 'Investigations (M7)', path: '/investigations', icon: FileSearch, badge: 'Live' },
     { name: 'Global Search (M9)', path: '/search', icon: Search, badge: 'Live' },
     { name: 'Reports & Export (M10)', path: '/reports', icon: BarChart3, badge: 'Live' },
+    ...(user?.role === 'ADMIN'
+      ? [{ name: 'Audit Logs (M11)', path: '/logs', icon: ShieldCheck, badge: 'Live' }]
+      : []),
   ];
 
   const upcomingNavItems = [
-    { name: 'Audit Logs (M11)', path: '/logs', icon: ShieldCheck, adminOnly: true },
+    { name: 'Undo / Redo (M12)', path: '/undo', icon: Activity },
   ];
 
   return (

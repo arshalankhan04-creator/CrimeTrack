@@ -5,6 +5,7 @@ import FoundationStatus from '../pages/FoundationStatus';
 import Login from '../pages/auth/Login';
 import AdminDashboard from '../pages/admin/AdminDashboard';
 import Users from '../pages/admin/Users';
+import AuditLogs from '../pages/admin/AuditLogs';
 import FIRs from '../pages/fir/FIRs';
 import Cases from '../pages/cases/Cases';
 import Criminals from '../pages/criminals/Criminals';
@@ -63,6 +64,20 @@ export default function AppRoutes() {
             <RoleRoute allowedRoles={['ADMIN']}>
               <Layout>
                 <Users />
+              </Layout>
+            </RoleRoute>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin Audit Logs & Security Trails */}
+      <Route
+        path="/logs"
+        element={
+          <ProtectedRoute>
+            <RoleRoute allowedRoles={['ADMIN']}>
+              <Layout>
+                <AuditLogs />
               </Layout>
             </RoleRoute>
           </ProtectedRoute>

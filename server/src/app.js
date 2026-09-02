@@ -12,6 +12,7 @@ const investigationRoutes = require('./routes/investigationRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const searchRoutes = require('./routes/searchRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 const { notFoundHandler, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
@@ -38,6 +39,7 @@ app.use('/api/investigations', investigationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/audit-logs', auditRoutes);
 
 // Fallback for 404 & Central Error Handling
 app.use(notFoundHandler);
