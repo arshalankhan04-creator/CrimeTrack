@@ -38,10 +38,10 @@ export default function Sidebar() {
     { name: 'Criminal Registry (M6)', path: '/criminals', icon: Users, badge: 'Live' },
     { name: 'Investigations (M7)', path: '/investigations', icon: FileSearch, badge: 'Live' },
     { name: 'Global Search (M9)', path: '/search', icon: Search, badge: 'Live' },
+    { name: 'Reports & Export (M10)', path: '/reports', icon: BarChart3, badge: 'Live' },
   ];
 
   const upcomingNavItems = [
-    { name: 'Reports & Export (M10)', path: '/reports', icon: BarChart3 },
     { name: 'Audit Logs (M11)', path: '/logs', icon: ShieldCheck, adminOnly: true },
   ];
 
