@@ -11,7 +11,7 @@ import {
   Search,
   MessageSquare,
   Zap,
-  Sparkles
+  ShieldAlert
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -20,41 +20,39 @@ export default function Sidebar() {
   const { user, isAuthenticated } = useAuth();
 
   const getDashboardLink = () => {
-    if (user?.role === 'ADMIN') return { name: 'Admin Command (M2)', path: '/admin/dashboard', icon: LayoutDashboard };
-    if (user?.role === 'OFFICER') return { name: 'Officer Workspace (M2)', path: '/officer/dashboard', icon: LayoutDashboard };
-    if (user?.role === 'VIEWER') return { name: 'Viewer Portal (M2)', path: '/viewer/dashboard', icon: LayoutDashboard };
+    if (user?.role === 'ADMIN') return { name: 'Command Dashboard', path: '/admin/dashboard', icon: LayoutDashboard };
+    if (user?.role === 'OFFICER') return { name: 'Officer Workspace', path: '/officer/dashboard', icon: LayoutDashboard };
+    if (user?.role === 'VIEWER') return { name: 'Viewer Portal', path: '/viewer/dashboard', icon: LayoutDashboard };
     return null;
   };
 
   const dashboardItem = getDashboardLink();
 
   const baseNavItems = [
-    { name: 'System Status (M1)', path: '/', icon: Activity, badge: 'Active' },
+    { name: 'Station Overview', path: '/', icon: Activity },
   ];
 
   const liveOperationalNavItems = [
     ...(user?.role === 'ADMIN'
-      ? [{ name: 'User Management (M3)', path: '/users', icon: Users, badge: 'Live' }]
+      ? [{ name: 'User Management', path: '/users', icon: Users }]
       : []),
-    { name: 'FIR Management (M4)', path: '/firs', icon: FileText, badge: 'Live' },
-    { name: 'Case Management (M5)', path: '/cases', icon: Briefcase, badge: 'Live' },
-    { name: 'Criminal Registry (M6)', path: '/criminals', icon: Users, badge: 'Live' },
-    { name: 'Investigations (M7)', path: '/investigations', icon: FileSearch, badge: 'Live' },
-    { name: 'Global Search (M9)', path: '/search', icon: Search, badge: 'Live' },
-    { name: 'Reports & Export (M10)', path: '/reports', icon: BarChart3, badge: 'Live' },
+    { name: 'FIR Management', path: '/firs', icon: FileText },
+    { name: 'Case Registry', path: '/cases', icon: Briefcase },
+    { name: 'Criminal Registry', path: '/criminals', icon: Users },
+    { name: 'Investigations', path: '/investigations', icon: FileSearch },
+    { name: 'Global Search', path: '/search', icon: Search },
+    { name: 'Reports & Exports', path: '/reports', icon: BarChart3 },
     ...(user?.role === 'ADMIN'
       ? [
-          { name: 'Audit Logs (M11)', path: '/logs', icon: ShieldCheck, badge: 'Live' },
-          { name: 'Audit Recovery (M12)', path: '/recovery', icon: Activity, badge: 'Live' },
+          { name: 'Audit Trails', path: '/logs', icon: ShieldCheck },
+          { name: 'Disaster Recovery', path: '/recovery', icon: Activity },
         ]
       : []),
-    { name: 'Feedback Hub (M13)', path: '/feedback', icon: MessageSquare, badge: 'Live' },
+    { name: 'Feedback & Support', path: '/feedback', icon: MessageSquare },
     ...(user?.role === 'ADMIN'
-      ? [{ name: 'QA Diagnostics (M14)', path: '/qa', icon: Zap, badge: 'Live' }]
+      ? [{ name: 'System Diagnostics', path: '/qa', icon: Zap }]
       : []),
   ];
-
-  const upcomingNavItems = [];
 
   return (
     <aside className="w-64 bg-navy-900 text-slate-300 min-h-[calc(100vh-4rem)] border-r border-navy-800 flex flex-col justify-between p-4 hidden md:flex">
@@ -80,13 +78,10 @@ export default function Sidebar() {
                   <dashboardItem.icon className="w-4 h-4 text-emerald-400" />
                   <span>{dashboardItem.name}</span>
                 </div>
-                <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                  Live
-                </span>
               </NavLink>
             )}
 
-            {/* General Foundation Status */}
+            {/* General Station Status Overview */}
             {baseNavItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -105,11 +100,6 @@ export default function Sidebar() {
                     <Icon className="w-4 h-4 text-brand-blue" />
                     <span>{item.name}</span>
                   </div>
-                  {item.badge && (
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30 font-bold">
-                      15/15
-                    </span>
-                  )}
                 </NavLink>
               );
             })}
@@ -118,7 +108,7 @@ export default function Sidebar() {
             {isAuthenticated && (
               <div className="pt-3">
                 <p className="px-3 pb-1 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                  Active Modules
+                  Station Modules
                 </p>
                 {liveOperationalNavItems.map((item) => {
                   const Icon = item.icon;
@@ -138,11 +128,6 @@ export default function Sidebar() {
                         <Icon className="w-4 h-4 text-blue-400" />
                         <span>{item.name}</span>
                       </div>
-                      {item.badge && (
-                        <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                          {item.badge}
-                        </span>
-                      )}
                     </NavLink>
                   );
                 })}
@@ -150,24 +135,13 @@ export default function Sidebar() {
             )}
           </nav>
         </div>
-
-        {/* Project Completion Badge */}
-        <div className="bg-emerald-950/40 p-3 rounded-lg border border-emerald-800/50 text-xs">
-          <div className="flex items-center gap-2 text-emerald-400 font-bold text-[11px]">
-            <Sparkles className="w-4 h-4" />
-            <span>Full System Delivery</span>
-          </div>
-          <p className="text-[10px] text-slate-400 mt-1">
-            All 15 implementation milestones completed and verified.
-          </p>
-        </div>
       </div>
 
       {/* Role Profile Tag at Sidebar Bottom */}
       <div className="bg-navy-800/80 p-3 rounded-lg border border-navy-700 text-xs">
         <p className="font-medium text-white flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Production Ready (15/15)
+          System Operational
         </p>
         <p className="text-[11px] text-slate-400 mt-1">
           {isAuthenticated ? `Signed in as ${user?.role}` : 'Unauthenticated Session'}

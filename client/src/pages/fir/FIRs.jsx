@@ -235,7 +235,7 @@ export default function FIRs() {
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="badge-info">Milestone 4</span>
+            <span className="badge-info font-bold">COMPLAINT REGISTRY</span>
             <span className="text-xs text-slate-500 font-mono">First Information Report (FIR) Registry</span>
           </div>
           <h1 className="text-2xl font-bold text-navy-900 mt-2 tracking-tight">

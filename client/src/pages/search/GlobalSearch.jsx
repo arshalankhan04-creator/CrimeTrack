@@ -202,8 +202,8 @@ export default function GlobalSearch() {
       <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="badge-info">Milestone 9</span>
-            <span className="text-xs text-slate-500 font-mono">Cross-Entity Query Engine</span>
+            <span className="badge-info font-bold">CROSS-ENTITY SEARCH</span>
+            <span className="text-xs text-slate-500 font-mono">Omni-Query Engine</span>
           </div>
           <h1 className="text-2xl font-bold text-navy-900 mt-2 tracking-tight">
             Advanced Global Search & Multi-Criteria Filtering
