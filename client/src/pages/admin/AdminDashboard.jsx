@@ -74,7 +74,7 @@ export default function AdminDashboard() {
       />
 
       {/* Top Level KPI Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5">
         <StatCard
           title="Total FIRs"
           value={stats?.totalFIRs}
@@ -134,36 +134,60 @@ export default function AdminDashboard() {
           Operational Subsystems
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link to="/users" className="card-surface p-4.5 hover:border-brand-blue/60 transition group block">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-navy-900">User Hierarchy</span>
-              <span className="text-[11px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+          <Link to="/users" className="card-surface p-5 hover:border-brand-blue/60 hover:shadow-card transition group flex flex-col justify-between h-full min-w-0">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-navy-900 group-hover:text-brand-blue transition">User Hierarchy</span>
+                <span className="text-xs text-brand-blue font-bold group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">Manage Officers, Viewers & Station Supervisions</p>
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Manage Officers, Viewers & Supervisions</p>
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-400">
+              <span>Security Scopes</span>
+              <span className="text-brand-blue font-semibold">Access Console</span>
+            </div>
           </Link>
 
-          <Link to="/firs" className="card-surface p-4.5 hover:border-brand-blue/60 transition group block">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-navy-900">FIR Management</span>
-              <span className="text-[11px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+          <Link to="/firs" className="card-surface p-5 hover:border-brand-blue/60 hover:shadow-card transition group flex flex-col justify-between h-full min-w-0">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-navy-900 group-hover:text-brand-blue transition">FIR Management</span>
+                <span className="text-xs text-brand-blue font-bold group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">Citizen complaints, sequential tracking & printable sheets</p>
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Citizen complaints & printable sheets</p>
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-400">
+              <span>Complaint Intake</span>
+              <span className="text-brand-blue font-semibold">Open Registry</span>
+            </div>
           </Link>
 
-          <Link to="/cases" className="card-surface p-4.5 hover:border-brand-blue/60 transition group block">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-navy-900">Case Registry</span>
-              <span className="text-[11px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+          <Link to="/cases" className="card-surface p-5 hover:border-brand-blue/60 hover:shadow-card transition group flex flex-col justify-between h-full min-w-0">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-navy-900 group-hover:text-brand-blue transition">Case Registry</span>
+                <span className="text-xs text-brand-blue font-bold group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">Investigation lifecycle, clearance milestones & reassignments</p>
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Investigation lifecycle & reassignment</p>
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-400">
+              <span>Active Dossiers</span>
+              <span className="text-brand-blue font-semibold">Manage Cases</span>
+            </div>
           </Link>
 
-          <Link to="/criminals" className="card-surface p-4.5 hover:border-brand-blue/60 transition group block">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-navy-900">Criminal Registry</span>
-              <span className="text-[11px] text-brand-blue font-bold group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+          <Link to="/criminals" className="card-surface p-5 hover:border-brand-blue/60 hover:shadow-card transition group flex flex-col justify-between h-full min-w-0">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-navy-900 group-hover:text-brand-blue transition">Criminal Registry</span>
+                <span className="text-xs text-brand-blue font-bold group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">Identity master, known aliases, marks & case linkage</p>
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Identity master & privacy lookup</p>
+            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-mono text-slate-400">
+              <span>Repeat Offenders</span>
+              <span className="text-brand-blue font-semibold">View Master</span>
+            </div>
           </Link>
         </div>
       </div>

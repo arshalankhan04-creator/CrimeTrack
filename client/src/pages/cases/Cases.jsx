@@ -720,34 +720,34 @@ export default function Cases() {
       {/* CASE DETAILS & AUDIT TIMELINE MODAL */}
       {selectedCase && (
         <Modal
-          isOpen={isViewModalOpen}
-          onClose={() => setIsViewModalOpen(false)}
+          isOpen={isHistoryModalOpen}
+          onClose={() => setIsHistoryModalOpen(false)}
           title={`Case Dossier: ${selectedCase.caseNumber}`}
           subtitle="Official crime case record, investigative progress, and complete chronological audit history."
           size="lg"
         >
-          <div className="space-y-6 text-xs">
+          <div className="space-y-6 text-xs min-w-0">
             {/* Metadata Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl">
-              <div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-slate-50 border border-slate-200 rounded-xl min-w-0">
+              <div className="min-w-0">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Case Status</span>
                 <div className="mt-1">
                   <Badge variant={selectedCase.status}>{selectedCase.status}</Badge>
                 </div>
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Priority</span>
                 <div className="mt-1">
                   <Badge variant={selectedCase.priority}>{selectedCase.priority}</Badge>
                 </div>
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Assigned Officer</span>
-                <p className="font-semibold text-navy-900 mt-1">
+                <p className="font-semibold text-navy-900 mt-1 truncate">
                   {selectedCase.assignedOfficerId?.name || 'Unassigned'}
                 </p>
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Date Opened</span>
                 <p className="font-semibold text-navy-900 mt-1">{new Date(selectedCase.openedAt).toLocaleDateString()}</p>
               </div>
@@ -755,31 +755,31 @@ export default function Cases() {
 
             {/* Linked FIR Section */}
             {selectedCase.firId && (
-              <div className="p-4 bg-blue-50/50 border border-blue-200 rounded-xl space-y-2">
+              <div className="p-4 bg-blue-50/50 border border-blue-200 rounded-xl space-y-2 min-w-0">
                 <p className="font-bold text-xs text-navy-900 flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-brand-blue" />
-                  Linked First Information Report ({selectedCase.firId.firNumber})
+                  <FileText className="w-4 h-4 text-brand-blue shrink-0" />
+                  <span className="truncate">Linked First Information Report ({selectedCase.firId.firNumber})</span>
                 </p>
-                <p className="text-slate-700"><strong>Complainant:</strong> {selectedCase.firId.complainantName} ({selectedCase.firId.complainantPhone})</p>
-                <p className="text-slate-700"><strong>Incident Place:</strong> {selectedCase.firId.incidentPlace}</p>
-                <p className="text-slate-700"><strong>FIR Description:</strong> {selectedCase.firId.description}</p>
+                <p className="text-slate-700 break-words"><strong>Complainant:</strong> {selectedCase.firId.complainantName} ({selectedCase.firId.complainantPhone})</p>
+                <p className="text-slate-700 break-words"><strong>Incident Place:</strong> {selectedCase.firId.incidentPlace}</p>
+                <p className="text-slate-700 break-words"><strong>FIR Description:</strong> {selectedCase.firId.description}</p>
               </div>
             )}
 
             {/* Case Summary */}
-            <div>
+            <div className="min-w-0">
               <h4 className="font-bold text-xs uppercase text-slate-400 tracking-wider mb-1">
                 Active Investigation Hypothesis / Summary
               </h4>
-              <div className="p-3 bg-slate-50 border rounded-lg text-slate-800 leading-relaxed whitespace-pre-wrap">
+              <div className="p-3 bg-slate-50 border rounded-lg text-slate-800 leading-relaxed whitespace-pre-wrap break-words">
                 {selectedCase.summary}
               </div>
             </div>
 
             {/* Chronological Audit Trail Timeline */}
-            <div>
+            <div className="min-w-0">
               <h4 className="font-bold text-xs uppercase text-navy-900 tracking-wider mb-3 flex items-center gap-1.5">
-                <History className="w-4 h-4 text-brand-blue" />
+                <History className="w-4 h-4 text-brand-blue shrink-0" />
                 Chronological Audit Trail & Status Lifecycle
               </h4>
 
@@ -788,20 +788,20 @@ export default function Cases() {
               ) : caseHistory.length === 0 ? (
                 <p className="text-slate-400 py-4 text-center">No previous history records.</p>
               ) : (
-                <div className="space-y-3 relative pl-4 border-l-2 border-slate-200">
+                <div className="space-y-3 relative pl-4 border-l-2 border-slate-200 min-w-0">
                   {caseHistory.map((event) => (
-                    <div key={event._id} className="relative group">
+                    <div key={event._id} className="relative group min-w-0">
                       <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-brand-blue border-2 border-white ring-2 ring-slate-200"></div>
-                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-bold text-navy-900 font-mono">{event.action}</span>
-                          <span className="text-slate-400">{new Date(event.createdAt).toLocaleString()}</span>
+                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 min-w-0 space-y-1">
+                        <div className="flex items-center justify-between text-[11px] gap-2">
+                          <span className="font-bold text-navy-900 font-mono truncate">{event.action}</span>
+                          <span className="text-slate-400 shrink-0">{new Date(event.createdAt).toLocaleString()}</span>
                         </div>
-                        <p className="text-[11px] text-slate-600 mt-1">
+                        <p className="text-[11px] text-slate-600 break-words">
                           Action recorded by <strong>{event.userId?.name || 'System User'}</strong> ({event.role})
                         </p>
                         {event.newValues?.status && (
-                          <p className="text-[11px] text-emerald-700 font-medium mt-1">
+                          <p className="text-[11px] text-emerald-700 font-medium break-words">
                             Status changed from <code className="bg-slate-200 px-1 py-0.5 rounded">{event.oldValues?.status || 'INIT'}</code> to <code className="bg-emerald-100 text-emerald-900 px-1 py-0.5 rounded font-bold">{event.newValues.status}</code>
                           </p>
                         )}
@@ -813,7 +813,7 @@ export default function Cases() {
             </div>
 
             <div className="pt-4 flex justify-end border-t border-slate-100">
-              <Button variant="secondary" onClick={() => setIsViewModalOpen(false)}>
+              <Button variant="secondary" onClick={() => setIsHistoryModalOpen(false)}>
                 Close Dossier
               </Button>
             </div>

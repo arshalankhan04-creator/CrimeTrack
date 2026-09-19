@@ -240,7 +240,7 @@ export default function Feedback() {
 
       {/* KPI Overview Cards */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
           <StatCard
             title="Total Submissions"
             value={stats.totalCount}
@@ -274,7 +274,7 @@ export default function Feedback() {
 
       {/* Filter Toolbar */}
       <div className="card-surface p-4">
-        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           <FormField label="Search Keywords">
             <Input
               placeholder="Search subject or notes..."
@@ -337,12 +337,21 @@ export default function Feedback() {
 
       {/* Feedback Feed */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-navy-900 flex items-center gap-2">
-            <MessageCircle className="w-4 h-4 text-brand-blue" />
-            Feedback Submissions ({pagination.total} Records)
-          </h2>
-          <span className="text-xs text-slate-400 font-mono">
+        <div className="card-surface p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-blue-50 text-brand-blue">
+              <MessageCircle className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-navy-900">
+                Feedback Submissions ({pagination.total} Records)
+              </h2>
+              <p className="text-xs text-slate-500">
+                Citizen inquiries, officer bug reports, and station suggestions
+              </p>
+            </div>
+          </div>
+          <span className="text-xs text-slate-500 font-mono bg-slate-100 px-2.5 py-1 rounded-lg">
             Page {pagination.page} of {pagination.totalPages}
           </span>
         </div>
@@ -358,22 +367,22 @@ export default function Feedback() {
             onAction={() => setIsSubmitModalOpen(true)}
           />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0 w-full">
             {feedbacks.map((item) => (
               <div
                 key={item._id}
-                className="card-surface p-5 hover:border-slate-300 transition space-y-3"
+                className="card-surface p-5 hover:border-slate-300 transition space-y-3 min-w-0 w-full"
               >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
                     <Badge variant={item.status}>{item.status}</Badge>
                     <Badge variant={item.priority}>{item.priority}</Badge>
-                    <span className="text-xs font-bold text-navy-900 bg-slate-100 px-2 py-0.5 rounded">
+                    <span className="text-xs font-bold text-navy-900 bg-slate-100 px-2 py-0.5 rounded truncate max-w-[150px]">
                       {item.feedbackType.replace(/_/g, ' ')}
                     </span>
-                    <span className="text-xs text-slate-500 font-medium">• {item.category}</span>
+                    <span className="text-xs text-slate-500 font-medium truncate max-w-[150px]">• {item.category}</span>
                     {item.rating && (
-                      <div className="flex items-center gap-0.5 text-amber-400">
+                      <div className="flex items-center gap-0.5 text-amber-400 shrink-0">
                         {[...Array(item.rating)].map((_, i) => (
                           <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
                         ))}
@@ -381,40 +390,41 @@ export default function Feedback() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
+                  <div className="flex items-center gap-2 text-xs text-slate-400 font-mono shrink-0">
                     <User className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{item.userId?.name} ({item.userId?.role})</span>
+                    <span className="truncate max-w-[120px]">{item.userId?.name}</span>
+                    <span>({item.userId?.role})</span>
                     <span>• {new Date(item.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="text-sm font-bold text-navy-900">{item.subject}</h3>
-                  <p className="text-xs text-slate-600 mt-1 whitespace-pre-line leading-relaxed">{item.message}</p>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-navy-900 break-words">{item.subject}</h3>
+                  <p className="text-xs text-slate-600 mt-1 whitespace-pre-line break-words leading-relaxed">{item.message}</p>
                 </div>
 
                 {item.relatedCaseId && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800 font-mono">
-                    <Briefcase className="w-3.5 h-3.5" />
-                    <span>Linked Case: {item.relatedCaseId.caseNumber}</span>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800 font-mono max-w-full truncate">
+                    <Briefcase className="w-3.5 h-3.5 shrink-0" />
+                    <span className="truncate">Linked Case: {item.relatedCaseId.caseNumber}</span>
                   </div>
                 )}
 
                 {/* Admin Official Response Box */}
                 {item.adminResponse && (
-                  <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg text-xs space-y-1">
-                    <div className="flex items-center justify-between text-emerald-800 font-bold text-[11px]">
-                      <span className="flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg text-xs space-y-1 min-w-0">
+                    <div className="flex items-center justify-between text-emerald-800 font-bold text-[11px] min-w-0">
+                      <span className="flex items-center gap-1 truncate">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         Official Administration Response
                       </span>
                       {item.resolvedAt && (
-                        <span className="font-mono text-[10px] text-emerald-700">
+                        <span className="font-mono text-[10px] text-emerald-700 shrink-0 ml-2">
                           {new Date(item.resolvedAt).toLocaleString()}
                         </span>
                       )}
                     </div>
-                    <p className="text-emerald-950 text-xs">{item.adminResponse}</p>
+                    <p className="text-emerald-950 text-xs break-words">{item.adminResponse}</p>
                   </div>
                 )}
 
@@ -573,11 +583,11 @@ export default function Feedback() {
           size="md"
         >
           <form onSubmit={handleTriageSubmit} className="space-y-4">
-            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-              <p className="font-bold text-navy-900 text-xs">{selectedFeedback.subject}</p>
-              <p className="text-slate-600 text-xs leading-relaxed">{selectedFeedback.message}</p>
-              <div className="flex items-center gap-2 text-[11px] text-slate-400 pt-1 font-mono">
-                <span>From: {selectedFeedback.userId?.name}</span>
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1 min-w-0">
+              <p className="font-bold text-navy-900 text-xs break-words">{selectedFeedback.subject}</p>
+              <p className="text-slate-600 text-xs leading-relaxed break-words">{selectedFeedback.message}</p>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400 pt-1 font-mono flex-wrap">
+                <span className="truncate max-w-[150px]">From: {selectedFeedback.userId?.name}</span>
                 <span>• {new Date(selectedFeedback.createdAt).toLocaleString()}</span>
               </div>
             </div>

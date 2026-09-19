@@ -131,19 +131,19 @@ export default function Navbar({ onToggleMobileMenu, onOpenProfile }) {
         <div className="flex items-center justify-between h-16 gap-3">
           
           {/* Left: Mobile Toggle, CrimeTrack Shield Branding & Page Breadcrumb */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-3 shrink-0 min-w-0">
             {isAuthenticated && (
               <button
                 type="button"
                 onClick={onToggleMobileMenu}
-                className="md:hidden p-2 rounded-lg bg-navy-800 text-slate-300 hover:text-white hover:bg-navy-700 transition"
+                className="md:hidden p-2 rounded-lg bg-navy-800 text-slate-300 hover:text-white hover:bg-navy-700 transition shrink-0"
                 aria-label="Open navigation menu"
               >
                 <Menu className="w-5 h-5" />
               </button>
             )}
 
-            <Link to="/" className="flex items-center gap-2.5 group focus:outline-none">
+            <Link to="/" className="flex items-center gap-2.5 group focus:outline-none shrink-0">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-blue to-blue-700 flex items-center justify-center text-white shadow-md shadow-blue-950/40 group-hover:scale-105 transition-transform shrink-0">
                 <Shield className="w-5 h-5 text-white" />
               </div>
@@ -159,9 +159,9 @@ export default function Navbar({ onToggleMobileMenu, onOpenProfile }) {
 
             {/* Page Title Breadcrumb on Desktop */}
             {pageTitle && (
-              <div className="hidden lg:flex items-center gap-2 pl-2.5 border-l border-navy-800 text-xs">
-                <span className="text-slate-500">/</span>
-                <span className="font-semibold text-slate-300 tracking-wide select-none">
+              <div className="hidden lg:flex items-center gap-2 pl-2.5 border-l border-navy-800 text-xs min-w-0 truncate max-w-[200px] xl:max-w-xs">
+                <span className="text-slate-500 shrink-0">/</span>
+                <span className="font-semibold text-slate-300 tracking-wide select-none truncate">
                   {pageTitle}
                 </span>
               </div>
@@ -170,7 +170,7 @@ export default function Navbar({ onToggleMobileMenu, onOpenProfile }) {
 
           {/* Center: Quick Search Bar (For Authenticated Users) */}
           {isAuthenticated ? (
-            <form onSubmit={handleQuickSearch} className="hidden md:flex items-center flex-1 max-w-md mx-3 lg:mx-6">
+            <form onSubmit={handleQuickSearch} className="hidden md:flex items-center flex-1 max-w-md mx-3 lg:mx-6 min-w-0">
               <div className="relative w-full">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input

@@ -41,6 +41,7 @@ export default function Button({
       disabled={disabled || loading}
       onClick={onClick}
       title={title}
+      aria-label={props['aria-label'] || title || (typeof children === 'string' ? children : undefined)}
       className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
       {...props}
     >

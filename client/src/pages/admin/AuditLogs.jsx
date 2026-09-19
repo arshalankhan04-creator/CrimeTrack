@@ -205,35 +205,46 @@ export default function AuditLogs() {
 
       {/* Audit KPI Cards */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
           <StatCard
             title="Total Audit Events"
             value={stats.totalCount || 0}
+            subtitle="Immutable Audit Logs"
             icon={Activity}
           />
           <StatCard
             title="Today's Mutations"
             value={stats.todayCount || 0}
+            subtitle="Past 24 Hours Activity"
             icon={Clock}
             className="border-emerald-200"
           />
           <StatCard
             title="Active Officers"
             value={stats.activeOfficersCount || 0}
+            subtitle="Duty Personnel"
             icon={User}
           />
           <StatCard
             title="Top Action"
-            value={stats.topActions?.[0]?.action || 'N/A'}
+            value={
+              stats.topActions?.[0]?.action
+                ? stats.topActions[0].action
+                    .replace(/_/g, ' ')
+                    .toLowerCase()
+                    .replace(/\b\w/g, (c) => c.toUpperCase())
+                : 'N/A'
+            }
+            subtitle={`${stats.topActions?.[0]?.count || 0} Events Recorded`}
             icon={Layers}
-            trend={{ direction: 'up', label: `${stats.topActions?.[0]?.count || 0} logged` }}
+            trend={{ direction: 'up', label: 'Leading' }}
           />
         </div>
       )}
 
       {/* Filter Toolbar */}
       <div className="card-surface p-5">
-        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 text-xs">
           <div>
             <label className="block font-semibold text-slate-700 mb-1">Search Keywords</label>
             <div className="relative">
@@ -429,9 +440,9 @@ export default function AuditLogs() {
           {/* Diff Side by Side */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Old Values */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <span className="font-bold text-slate-500 uppercase text-[10px]">Previous Values (Before)</span>
-              <pre className="p-3 bg-red-50/50 border border-red-200 rounded-xl text-[11px] text-red-900 font-mono whitespace-pre-wrap overflow-x-auto min-h-[120px]">
+              <pre className="p-3 bg-red-50/50 border border-red-200 rounded-xl text-[11px] text-red-900 font-mono whitespace-pre-wrap break-all overflow-x-auto max-h-60 min-h-[120px]">
                 {selectedLog?.oldValues
                   ? JSON.stringify(selectedLog.oldValues, null, 2)
                   : 'None (Initial Record / Creation)'}
@@ -439,9 +450,9 @@ export default function AuditLogs() {
             </div>
 
             {/* New Values */}
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <span className="font-bold text-slate-500 uppercase text-[10px]">Updated Values (After)</span>
-              <pre className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl text-[11px] text-emerald-900 font-mono whitespace-pre-wrap overflow-x-auto min-h-[120px]">
+              <pre className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl text-[11px] text-emerald-900 font-mono whitespace-pre-wrap break-all overflow-x-auto max-h-60 min-h-[120px]">
                 {selectedLog?.newValues
                   ? JSON.stringify(selectedLog.newValues, null, 2)
                   : 'None'}
@@ -451,9 +462,9 @@ export default function AuditLogs() {
 
           {/* Context Metadata */}
           {selectedLog?.metadata && Object.keys(selectedLog.metadata).length > 0 && (
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <span className="font-bold text-slate-500 uppercase text-[10px]">Context Metadata</span>
-              <pre className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-800 font-mono whitespace-pre-wrap">
+              <pre className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-800 font-mono whitespace-pre-wrap break-all overflow-x-auto max-h-40">
                 {JSON.stringify(selectedLog.metadata, null, 2)}
               </pre>
             </div>

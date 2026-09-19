@@ -135,6 +135,7 @@ export default function Criminals() {
   const handleResetFilters = () => {
     setSearch('');
     setGenderFilter('');
+    fetchCriminals(1);
   };
 
   // Minimal Global Search execution
@@ -397,31 +398,31 @@ export default function Criminals() {
           />
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="app-table">
+            <div className="overflow-x-auto min-w-0 w-full">
+              <table className="app-table w-full">
                 <thead>
                   <tr>
-                    <th>Criminal Identity</th>
-                    <th>Demographics</th>
-                    <th>Physical Marks / Tattoos</th>
-                    <th>Associated Cases</th>
-                    <th>Last Known Location</th>
-                    <th className="text-right">Actions</th>
+                    <th className="w-[22%] min-w-[200px]">Criminal Identity</th>
+                    <th className="w-[12%] min-w-[110px]">Demographics</th>
+                    <th className="w-[27%] min-w-[220px]">Physical Marks / Tattoos</th>
+                    <th className="w-[15%] min-w-[130px]">Associated Cases</th>
+                    <th className="w-[24%] min-w-[200px]">Last Known Location</th>
+                    <th className="text-right shrink-0">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {criminals.map((c) => (
                     <tr key={c._id}>
                       <td>
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-navy-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <div className="w-10 h-10 rounded-full bg-navy-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs mt-0.5">
                             {c.name.charAt(0).toUpperCase()}
                           </div>
-                          <div>
-                            <p className="font-semibold text-navy-950 text-xs">{c.name}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-navy-950 text-xs break-words">{c.name}</p>
                             {c.aliases && c.aliases.length > 0 && (
-                              <p className="text-[11px] text-brand-blue font-mono mt-0.5">
-                                Alias: {c.aliases.join(', ')}
+                              <p className="text-[11px] text-slate-500 font-medium break-words mt-0.5" title={c.aliases.join(', ')}>
+                                <span className="text-slate-400 font-mono">Alias:</span> {c.aliases.join(', ')}
                               </p>
                             )}
                           </div>
@@ -431,8 +432,14 @@ export default function Criminals() {
                         <span className="font-semibold text-slate-700 text-xs">{c.gender}</span>
                         {c.age && <span className="text-slate-500 text-xs"> • {c.age} yrs</span>}
                       </td>
-                      <td className="text-slate-600 max-w-xs truncate text-xs">
-                        {c.identifyingMarks || <span className="text-slate-400 italic">None logged</span>}
+                      <td className="text-slate-600 text-xs">
+                        {c.identifyingMarks ? (
+                          <p className="line-clamp-2 leading-relaxed" title={c.identifyingMarks}>
+                            {c.identifyingMarks}
+                          </p>
+                        ) : (
+                          <span className="text-slate-400 italic">None logged</span>
+                        )}
                       </td>
                       <td>
                         {c.associatedCaseIds && c.associatedCaseIds.length > 0 ? (
@@ -450,11 +457,11 @@ export default function Criminals() {
                           <span className="text-[11px] text-slate-400">No linked cases</span>
                         )}
                       </td>
-                      <td className="text-slate-500 truncate max-w-xs text-xs">
+                      <td className="text-slate-600 text-xs">
                         {c.address ? (
-                          <div className="flex items-center gap-1">
-                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span className="truncate">{c.address}</span>
+                          <div className="flex items-start gap-1.5 min-w-0" title={c.address}>
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                            <span className="line-clamp-2 leading-relaxed">{c.address}</span>
                           </div>
                         ) : (
                           <span className="text-slate-400 italic">Unrecorded</span>

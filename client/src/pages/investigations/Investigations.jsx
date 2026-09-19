@@ -413,20 +413,20 @@ export default function Investigations() {
                 <div className="absolute -left-[30px] top-1.5 w-4 h-4 rounded-full bg-brand-blue border-4 border-white ring-2 ring-slate-200 shadow-sm" />
 
                 {/* Entry Card */}
-                <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition text-xs space-y-3">
+                <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition text-xs space-y-3 min-w-0 w-full">
                   {/* Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-sm text-navy-950">{entry.title}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3 min-w-0">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <span className="font-bold text-sm text-navy-950 break-words">{entry.title}</span>
                         {renderStageBadge(entry.stage)}
                       </div>
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-[11px] text-slate-500 break-words">
                         Recorded by <strong>{entry.officerId?.name || 'Officer'}</strong> ({entry.officerId?.employeeId || 'ID'}) • <Clock className="w-3 h-3 inline ml-1 mr-0.5" /> {new Date(entry.recordedAt).toLocaleString()}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                    <div className="flex items-center gap-1.5 self-end sm:self-auto shrink-0">
                       {!isReadOnlyViewer && (
                         <Button
                           variant="outline"
@@ -476,27 +476,27 @@ export default function Investigations() {
                   </div>
 
                   {/* Findings Notes */}
-                  <div className="p-3.5 bg-white rounded-lg border border-slate-200 text-slate-800 leading-relaxed whitespace-pre-wrap text-xs">
+                  <div className="p-3.5 bg-white rounded-lg border border-slate-200 text-slate-800 leading-relaxed whitespace-pre-wrap break-words text-xs min-w-0">
                     {entry.notes}
                   </div>
 
                   {/* Attached Evidence */}
                   {entry.evidence && entry.evidence.length > 0 && (
-                    <div className="pt-2 space-y-2">
+                    <div className="pt-2 space-y-2 min-w-0">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                        <Paperclip className="w-3 h-3" /> Attached Evidence ({entry.evidence.length})
+                        <Paperclip className="w-3.5 h-3.5" /> Attached Evidence ({entry.evidence.length})
                       </span>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
                         {entry.evidence.map((ev, evIdx) => (
                           <div
                             key={ev._id || evIdx}
-                            className="p-3 bg-white border border-slate-200 rounded-lg flex items-start gap-2.5 shadow-xs"
+                            className="p-3 bg-white border border-slate-200 rounded-lg flex items-start gap-2.5 shadow-xs min-w-0"
                           >
                             <div className="p-1.5 bg-slate-100 rounded shrink-0 mt-0.5">
                               {getEvidenceIcon(ev.type)}
                             </div>
-                            <div className="space-y-0.5 overflow-hidden">
+                            <div className="space-y-0.5 min-w-0 flex-1 overflow-hidden">
                               <p className="font-bold text-navy-950 truncate text-xs">{ev.name}</p>
                               <Badge variant="info">{ev.type}</Badge>
                               {ev.description && (

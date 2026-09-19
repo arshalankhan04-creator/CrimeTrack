@@ -136,7 +136,7 @@ export default function RecoveryConsole() {
       />
 
       {/* KPI Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-3.5">
         <StatCard
           title="Reversible Snapshots (Undo)"
           value={reversibleLogs.length}
@@ -168,34 +168,38 @@ export default function RecoveryConsole() {
         />
       )}
 
-      {/* Navigation Tabs */}
-      <div className="flex border-b border-slate-200">
+      {/* Navigation Tabs Bar */}
+      <div className="card-surface p-2 flex items-center gap-2">
         <button
           onClick={() => setActiveTab('REVERSIBLE')}
-          className={`pb-3 px-4 text-xs font-bold transition border-b-2 flex items-center gap-2 ${
+          className={`flex-1 py-2.5 px-4 text-xs font-bold transition rounded-lg flex items-center justify-center gap-2 ${
             activeTab === 'REVERSIBLE'
-              ? 'border-amber-600 text-amber-700 bg-amber-50/50 rounded-t-lg'
-              : 'border-transparent text-slate-500 hover:text-navy-900'
+              ? 'bg-amber-500 text-white shadow-xs'
+              : 'text-slate-600 hover:text-navy-900 hover:bg-slate-100'
           }`}
         >
-          <Undo2 className="w-4 h-4 text-amber-600" />
+          <Undo2 className="w-4 h-4" />
           <span>Reversible Actions (Undo)</span>
-          <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-100 text-amber-800">
+          <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-mono ${
+            activeTab === 'REVERSIBLE' ? 'bg-amber-600 text-white' : 'bg-amber-100 text-amber-800'
+          }`}>
             {reversibleLogs.length}
           </span>
         </button>
 
         <button
           onClick={() => setActiveTab('HISTORY')}
-          className={`pb-3 px-4 text-xs font-bold transition border-b-2 flex items-center gap-2 ${
+          className={`flex-1 py-2.5 px-4 text-xs font-bold transition rounded-lg flex items-center justify-center gap-2 ${
             activeTab === 'HISTORY'
-              ? 'border-brand-blue text-brand-blue bg-blue-50/50 rounded-t-lg'
-              : 'border-transparent text-slate-500 hover:text-navy-900'
+              ? 'bg-brand-blue text-white shadow-xs'
+              : 'text-slate-600 hover:text-navy-900 hover:bg-slate-100'
           }`}
         >
-          <History className="w-4 h-4 text-brand-blue" />
+          <History className="w-4 h-4" />
           <span>Rollback & Redo History</span>
-          <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-700">
+          <span className={`ml-1 px-2 py-0.5 rounded-full text-[10px] font-mono ${
+            activeTab === 'HISTORY' ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-700'
+          }`}>
             {recoveryHistory.length}
           </span>
         </button>
@@ -204,13 +208,17 @@ export default function RecoveryConsole() {
       {/* TAB 1: REVERSIBLE ACTIONS (UNDO) */}
       {activeTab === 'REVERSIBLE' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="card-surface p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="text-sm font-bold text-navy-900">Restorable Snapshot Ledger (Undo Candidates)</h2>
-              <p className="text-xs text-slate-500">
+              <h2 className="text-sm font-bold text-navy-900 flex items-center gap-2">
+                <RotateCcw className="w-4 h-4 text-amber-600" />
+                Restorable Snapshot Ledger (Undo Candidates)
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
                 Mutations with verified pre-change snapshots available for atomic database rollback.
               </p>
             </div>
+            <Badge variant="warning">{reversibleLogs.length} Snapshots Available</Badge>
           </div>
 
           {loading ? (
@@ -228,68 +236,89 @@ export default function RecoveryConsole() {
               {reversibleLogs.map((log) => (
                 <div
                   key={log._id}
-                  className="card-surface p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-l-4 border-l-amber-500"
+                  className="card-surface p-5 space-y-4 border-l-4 border-l-amber-500 min-w-0 w-full hover:border-slate-300 transition"
                 >
-                  <div className="space-y-2 flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                  {/* Card Header: Metadata */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
                       <Badge variant="warning">{log.action}</Badge>
                       <span className="text-xs font-bold text-navy-900">{log.entityType}</span>
-                      <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                      <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded truncate max-w-xs">
                         ID: {log.entityId}
                       </span>
-                      <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5" />
-                        {new Date(log.createdAt).toLocaleString()}
-                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs text-slate-400 font-mono flex-wrap">
                       {log.userId && (
-                        <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
-                          <User className="w-3.5 h-3.5" />
+                        <span className="text-slate-600 font-medium flex items-center gap-1">
+                          <User className="w-3.5 h-3.5 text-slate-400" />
                           {log.userId.name} ({log.userId.employeeId || 'OFFICER'})
                         </span>
                       )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono mt-2">
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-950">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] uppercase font-bold text-red-700">Previous Snapshot (To Restore via Undo)</span>
-                          <span className="text-[10px] text-red-600 font-bold">STATE BEFORE</span>
-                        </div>
-                        <pre className="text-[11px] overflow-x-auto max-h-24 whitespace-pre-wrap">
-                          {JSON.stringify(log.oldValues, null, 2)}
-                        </pre>
-                      </div>
-
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-950">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] uppercase font-bold text-emerald-700">Applied State (Current in DB)</span>
-                          <span className="text-[10px] text-emerald-600 font-bold">STATE AFTER</span>
-                        </div>
-                        <pre className="text-[11px] overflow-x-auto max-h-24 whitespace-pre-wrap">
-                          {JSON.stringify(log.newValues, null, 2)}
-                        </pre>
-                      </div>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        {new Date(log.createdAt).toLocaleString()}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="flex lg:flex-col items-center justify-end gap-2 shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-100">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      icon={Eye}
-                      onClick={() => setSelectedLogForDiff(log)}
-                    >
-                      Full Diff
-                    </Button>
-                    <Button
-                      variant="warning"
-                      size="sm"
-                      icon={RotateCcw}
-                      loading={processingId === log._id}
-                      onClick={() => setConfirmRollbackLog(log)}
-                    >
-                      Undo Action
-                    </Button>
+                  {/* Card Body: 2-Column Snapshot Diff */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs font-mono min-w-0 w-full">
+                    <div className="p-3.5 bg-red-50/70 border border-red-200/80 rounded-xl text-red-950 min-w-0 flex flex-col justify-between">
+                      <div className="flex items-center justify-between gap-2 mb-2 min-w-0">
+                        <span className="text-[10px] uppercase font-bold text-red-700 tracking-wider truncate" title="Previous Snapshot (Before Mutation)">
+                          Previous Snapshot (Before Mutation)
+                        </span>
+                        <span className="text-[10px] bg-red-100 text-red-800 font-bold px-1.5 py-0.5 rounded shrink-0">
+                          RESTORE TARGET
+                        </span>
+                      </div>
+                      <pre className="text-[11px] overflow-x-auto max-h-36 whitespace-pre font-mono bg-white/70 p-2.5 rounded-lg border border-red-100 text-red-900 leading-relaxed">
+                        {JSON.stringify(log.oldValues, null, 2)}
+                      </pre>
+                    </div>
+
+                    <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-xl text-emerald-950 min-w-0 flex flex-col justify-between">
+                      <div className="flex items-center justify-between gap-2 mb-2 min-w-0">
+                        <span className="text-[10px] uppercase font-bold text-emerald-700 tracking-wider truncate" title="Applied State (Current Database State)">
+                          Applied State (Current State)
+                        </span>
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded shrink-0">
+                          ACTIVE STATE
+                        </span>
+                      </div>
+                      <pre className="text-[11px] overflow-x-auto max-h-36 whitespace-pre font-mono bg-white/70 p-2.5 rounded-lg border border-emerald-100 text-emerald-900 leading-relaxed">
+                        {JSON.stringify(log.newValues, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+
+                  {/* Card Footer: Action Toolbar */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                    <span className="text-[11px] text-slate-500 font-mono hidden sm:inline">
+                      Mutation Audit Log: #{log._id}
+                    </span>
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        icon={Eye}
+                        onClick={() => setSelectedLogForDiff(log)}
+                        className="w-full sm:w-auto"
+                      >
+                        Full Diff Inspector
+                      </Button>
+                      <Button
+                        variant="warning"
+                        size="sm"
+                        icon={RotateCcw}
+                        loading={processingId === log._id}
+                        onClick={() => setConfirmRollbackLog(log)}
+                        className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white"
+                      >
+                        Execute Undo
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

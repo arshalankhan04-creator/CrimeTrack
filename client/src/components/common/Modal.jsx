@@ -45,19 +45,19 @@ export default function Modal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="px-6 py-4.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="px-6 py-4.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-3 min-w-0">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               {Icon && (
                 <div className="p-2 rounded-lg bg-blue-50 text-brand-blue border border-blue-100 shrink-0">
                   <Icon className="w-4 h-4" />
                 </div>
               )}
-              <div>
-                <h3 className="text-base font-bold text-navy-900 leading-tight">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-bold text-navy-900 leading-tight break-words">
                   {title}
                 </h3>
                 {subtitle && (
-                  <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
+                  <p className="text-xs text-slate-500 mt-0.5 break-words">{subtitle}</p>
                 )}
               </div>
             </div>
@@ -65,7 +65,7 @@ export default function Modal({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 transition shrink-0"
               title="Close Modal (Esc)"
             >
               <X className="w-4 h-4" />
@@ -73,13 +73,13 @@ export default function Modal({
           </div>
 
           {/* Body */}
-          <div className="p-6 max-h-[calc(85vh-8rem)] overflow-y-auto">
+          <div className="p-6 max-h-[calc(85vh-8rem)] overflow-y-auto min-w-0">
             {children}
           </div>
 
           {/* Footer */}
           {footer && (
-            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
+            <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5 flex-wrap">
               {footer}
             </div>
           )}

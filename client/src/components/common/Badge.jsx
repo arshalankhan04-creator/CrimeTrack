@@ -7,7 +7,7 @@ export default function Badge({
   dot = false,
   className = '',
 }) {
-  const baseStyles = 'inline-flex items-center font-semibold rounded-md border select-none';
+  const baseStyles = 'inline-flex items-center font-semibold rounded-md border select-none max-w-full truncate';
 
   const variants = {
     // Roles

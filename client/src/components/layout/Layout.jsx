@@ -26,8 +26,8 @@ export default function Layout({ children }) {
         />
 
         {/* Scrollable Main Content Container */}
-        <div className="flex-1 md:pl-64 flex flex-col min-w-0 w-full min-h-[calc(100vh-4rem)]">
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <div className="flex-1 md:pl-64 flex flex-col min-w-0 w-full min-h-[calc(100vh-4rem)] overflow-x-hidden">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0">
             {children}
           </main>
         </div>

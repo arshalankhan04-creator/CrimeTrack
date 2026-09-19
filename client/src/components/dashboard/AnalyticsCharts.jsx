@@ -40,9 +40,9 @@ export default function AnalyticsCharts({ charts, stats }) {
   const maxMonthlyCount = Math.max(...monthlyTrends.map((m) => m.count), 1);
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 font-sans min-w-0 w-full">
       {/* 2-Column Primary Analytics Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0 w-full">
         
         {/* Crime Category Distribution Card */}
         <Card
@@ -122,25 +122,25 @@ export default function AnalyticsCharts({ charts, stats }) {
           </div>
 
           {/* Quick Resolution Metrics Strip */}
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-3 gap-2 text-center text-xs mt-4">
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400">Total Cases</span>
-              <p className="font-bold text-navy-900 text-sm mt-0.5 font-mono">{stats?.totalCases || 0}</p>
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-3 gap-2 text-center text-xs mt-4 min-w-0">
+            <div className="min-w-0">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block truncate" title="Total Cases">Total Cases</span>
+              <p className="font-bold text-navy-900 text-sm mt-0.5 font-mono truncate">{stats?.totalCases || 0}</p>
             </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400">Active Dossiers</span>
-              <p className="font-bold text-amber-600 text-sm mt-0.5 font-mono">{stats?.activeCaseload || 0}</p>
+            <div className="min-w-0">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block truncate" title="Active Dossiers">Active Dossiers</span>
+              <p className="font-bold text-amber-600 text-sm mt-0.5 font-mono truncate">{stats?.activeCaseload || 0}</p>
             </div>
-            <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400">Solved / Closed</span>
-              <p className="font-bold text-emerald-600 text-sm mt-0.5 font-mono">{stats?.resolvedCases || 0}</p>
+            <div className="min-w-0">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block truncate" title="Solved / Closed">Solved / Closed</span>
+              <p className="font-bold text-emerald-600 text-sm mt-0.5 font-mono truncate">{stats?.resolvedCases || 0}</p>
             </div>
           </div>
         </Card>
       </div>
 
       {/* 2-Column Secondary Analytics Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0 w-full">
         
         {/* Priority Severity Breakdown */}
         <Card

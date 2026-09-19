@@ -413,17 +413,17 @@ export default function GlobalSearch() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-3 min-w-0 w-full">
           {displayItems.map((item, idx) => (
             <div
               key={item._id || idx}
-              className="card-surface p-5 hover:border-brand-blue/50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs group"
+              className="card-surface p-5 hover:border-brand-blue/50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs group min-w-0 w-full"
             >
-              <div className="space-y-2 flex-1">
+              <div className="space-y-2 flex-1 min-w-0">
                 {/* Header Row */}
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap min-w-0">
                   {getEntityBadge(item.entityType)}
-                  <span className="font-mono font-bold text-navy-950">{item.referenceNumber}</span>
+                  <span className="font-mono font-bold text-navy-950 truncate max-w-[200px]">{item.referenceNumber}</span>
                   {item.crimeType && (
                     <Badge variant="neutral">{item.crimeType}</Badge>
                   )}
@@ -438,31 +438,31 @@ export default function GlobalSearch() {
                 </div>
 
                 {/* Title & Description */}
-                <div>
-                  <h3 className="font-bold text-sm text-navy-950">{item.title}</h3>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm text-navy-950 break-words">{item.title}</h3>
                   {item.description && (
-                    <p className="text-slate-600 mt-1 line-clamp-2 leading-relaxed text-xs">
+                    <p className="text-slate-600 mt-1 line-clamp-2 leading-relaxed text-xs break-words">
                       {item.description}
                     </p>
                   )}
                 </div>
 
                 {/* Metadata Row */}
-                <div className="flex items-center gap-4 text-[11px] text-slate-400 flex-wrap pt-1">
+                <div className="flex items-center gap-4 text-[11px] text-slate-400 flex-wrap pt-1 min-w-0">
                   {item.location && (
-                    <span className="flex items-center gap-1 text-slate-500">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                      {item.location}
+                    <span className="flex items-center gap-1 text-slate-500 truncate max-w-[200px]">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{item.location}</span>
                     </span>
                   )}
                   {item.assignedOfficer && (
-                    <span>Officer: <strong className="text-slate-700">{item.assignedOfficer}</strong></span>
+                    <span className="truncate max-w-[200px]">Officer: <strong className="text-slate-700">{item.assignedOfficer}</strong></span>
                   )}
                   {item.aliases && item.aliases.length > 0 && (
-                    <span>Aliases: <strong className="text-slate-700">{item.aliases.join(', ')}</strong></span>
+                    <span className="truncate max-w-[200px]">Aliases: <strong className="text-slate-700">{item.aliases.join(', ')}</strong></span>
                   )}
                   {item.date && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1 shrink-0">
                       <Clock className="w-3.5 h-3.5" />
                       {new Date(item.date).toLocaleDateString()}
                     </span>

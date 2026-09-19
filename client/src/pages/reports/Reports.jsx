@@ -218,7 +218,7 @@ export default function Reports() {
       </div>
 
       {/* Report Type Selector Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 print:hidden">
         {REPORT_TYPES.map((rt) => {
           const Icon = rt.icon;
           const isSelected = selectedReportType === rt.id;
@@ -257,34 +257,34 @@ export default function Reports() {
           </span>
         </div>
 
-        <form onSubmit={handleApplyFilters} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+        <form onSubmit={handleApplyFilters} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">From Date</label>
+            <label className="block font-semibold text-slate-700 mb-1.5">From Date</label>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-xs"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-xs"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">To Date</label>
+            <label className="block font-semibold text-slate-700 mb-1.5">To Date</label>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-xs"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-xs"
             />
           </div>
 
           {(selectedReportType === 'firs' || selectedReportType === 'crimes') && (
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Crime Category</label>
+              <label className="block font-semibold text-slate-700 mb-1.5">Crime Category</label>
               <select
                 value={crimeType}
                 onChange={(e) => setCrimeType(e.target.value)}
-                className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 text-xs font-medium"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 text-xs font-medium"
               >
                 <option value="">All Categories</option>
                 {CRIME_TYPES.map((c) => (
@@ -296,11 +296,11 @@ export default function Reports() {
 
           {selectedReportType === 'cases' && (
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Case Status</label>
+              <label className="block font-semibold text-slate-700 mb-1.5">Case Status</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 text-xs font-medium"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 text-xs font-medium"
               >
                 <option value="">All Statuses</option>
                 {CASE_STATUSES.map((s) => (
@@ -312,11 +312,11 @@ export default function Reports() {
 
           {selectedReportType === 'cases' && (
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Priority</label>
+              <label className="block font-semibold text-slate-700 mb-1.5">Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 text-xs font-medium"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 text-xs font-medium"
               >
                 <option value="">All Priorities</option>
                 {PRIORITIES.map((p) => (
@@ -333,7 +333,7 @@ export default function Reports() {
               size="md"
               icon={RefreshCw}
               loading={loading}
-              className="w-full"
+              className="w-full h-[38px]"
             >
               Update Preview
             </Button>
@@ -343,28 +343,32 @@ export default function Reports() {
 
       {/* Summary KPI Banner */}
       {summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 print:grid-cols-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 print:grid-cols-4">
           <StatCard
             title="Total FIRs"
             value={summary.totalFIRs || 0}
+            subtitle="Incident Complaints"
             icon={FileText}
           />
           <StatCard
             title="Total Case Files"
             value={summary.totalCases || 0}
+            subtitle="Investigation Files"
             icon={Briefcase}
           />
           <StatCard
             title="Cases Cleared"
             value={summary.resolved || 0}
+            subtitle="Closed / Solved Cases"
             icon={CheckCircle2}
             className="border-emerald-200"
           />
           <StatCard
             title="Clearance Rate"
             value={`${summary.resolutionRate || 0}%`}
+            subtitle="Clearance Efficiency"
             icon={BarChart3}
-            trend={{ direction: 'up', label: 'Department avg' }}
+            trend={{ direction: 'up', label: 'Dept Avg' }}
           />
         </div>
       )}
