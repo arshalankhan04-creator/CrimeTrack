@@ -73,6 +73,62 @@ const buildDateRangeQuery = (field, dateFrom, dateTo) => {
 };
 
 /**
+ * Helper to compute proportional column widths for PDF table
+ */
+const computePDFColumnWidths = (headers, totalWidth) => {
+  const weightMap = {
+    'FIR Number': 75,
+    'Case Number': 75,
+    'Crime ID': 65,
+    'Linked FIR Number': 70,
+    'Crime Classification': 65,
+    'Crime Type': 65,
+    'Category': 65,
+    'Severity Level': 50,
+    'Severity': 50,
+    'Priority Level': 50,
+    'Priority': 50,
+    'Investigation Status': 75,
+    'Status': 70,
+    'Case Status': 70,
+    'Complainant Name': 80,
+    'Complainant': 80,
+    'Complainant Contact': 65,
+    'Contact': 65,
+    'Incident Date': 55,
+    'Case Opened Date': 55,
+    'Case Closed Date': 55,
+    'Registered Date': 55,
+    'Opened Date': 55,
+    'Incident Location': 90,
+    'Location': 90,
+    'Location / Scene': 90,
+    'Assigned Investigating Officer': 85,
+    'Assigned Officer Name': 85,
+    'Investigating Officer': 85,
+    'Officer': 80,
+    'Officer Employee ID': 60,
+    'Officer ID': 60,
+    'Full Name': 85,
+    'Aliases': 75,
+    'Age': 35,
+    'Gender': 45,
+    'Physical Identifying Marks': 110,
+    'Physical Marks': 110,
+    'Registered Address': 110,
+    'Associated Cases Count': 55,
+    'Associated Cases': 55,
+    'Brief Description': 130,
+    'Summary / Notes': 130,
+    'Description': 130,
+  };
+
+  const weights = headers.map((h) => weightMap[h] || 70);
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+  return weights.map((w) => (w / totalWeight) * totalWidth);
+};
+
+/**
  * Generate PDF Document Buffer
  */
 const buildPDFBuffer = (title, headers, rows, user, filterDesc = '', summary = null) => {
@@ -135,41 +191,58 @@ const buildPDFBuffer = (title, headers, rows, user, filterDesc = '', summary = n
         currentY += 20;
       }
 
-      // Table Drawing
-      const colCount = headers.length;
-      const colWidth = pageWidth / colCount;
-      const rowHeight = 22;
+      // Compute proportional column widths and cumulative positions
+      const colWidths = computePDFColumnWidths(headers, pageWidth);
+      const colPositions = [0];
+      for (let i = 0; i < colWidths.length - 1; i++) {
+        colPositions.push(colPositions[i] + colWidths[i]);
+      }
 
-      // Header Row
-      doc.rect(36, currentY, pageWidth, rowHeight).fill('#2563EB');
-      doc.fillColor('#FFFFFF').fontSize(8.5).font('Helvetica-Bold');
-
-      headers.forEach((header, i) => {
-        doc.text(header, 36 + i * colWidth + 4, currentY + 6, {
-          width: colWidth - 8,
-          ellipsis: true,
-        });
+      // Compute dynamic header height
+      doc.fontSize(8).font('Helvetica-Bold');
+      let maxHeaderH = 22;
+      headers.forEach((h, idx) => {
+        const textH = doc.heightOfString(h, { width: colWidths[idx] - 8, lineGap: 1 });
+        if (textH + 8 > maxHeaderH) maxHeaderH = textH + 8;
       });
+      const headerHeight = Math.min(maxHeaderH, 30);
 
-      currentY += rowHeight;
+      const renderHeaderRow = (y) => {
+        doc.rect(36, y, pageWidth, headerHeight).fill('#2563EB');
+        doc.fillColor('#FFFFFF').fontSize(8).font('Helvetica-Bold');
 
-      // Data Rows
+        headers.forEach((header, i) => {
+          doc.text(header, 36 + colPositions[i] + 4, y + 5, {
+            width: colWidths[i] - 8,
+            height: headerHeight - 6,
+            ellipsis: true,
+            lineGap: 1,
+          });
+        });
+      };
+
+      // Draw initial Header Row
+      renderHeaderRow(currentY);
+      currentY += headerHeight;
+
+      // Draw Data Rows
       rows.forEach((row, rowIndex) => {
+        // Measure dynamic row height based on text content
+        doc.fontSize(7.5).font('Helvetica');
+        let maxCellH = 22;
+        row.forEach((cell, idx) => {
+          const text = String(cell || 'N/A');
+          const textH = doc.heightOfString(text, { width: colWidths[idx] - 8, lineGap: 1 });
+          if (textH + 8 > maxCellH) maxCellH = textH + 8;
+        });
+        const rowHeight = Math.min(Math.max(22, maxCellH), 48);
+
         // Page break check
-        if (currentY + rowHeight > doc.page.height - 50) {
+        if (currentY + rowHeight > doc.page.height - 45) {
           doc.addPage({ layout: 'landscape', margin: 36 });
           currentY = 40;
-
-          // Repeat Header on new page
-          doc.rect(36, currentY, pageWidth, rowHeight).fill('#2563EB');
-          doc.fillColor('#FFFFFF').fontSize(8.5).font('Helvetica-Bold');
-          headers.forEach((header, i) => {
-            doc.text(header, 36 + i * colWidth + 4, currentY + 6, {
-              width: colWidth - 8,
-              ellipsis: true,
-            });
-          });
-          currentY += rowHeight;
+          renderHeaderRow(currentY);
+          currentY += headerHeight;
         }
 
         // Alternating background
@@ -177,13 +250,16 @@ const buildPDFBuffer = (title, headers, rows, user, filterDesc = '', summary = n
         doc.rect(36, currentY, pageWidth, rowHeight).fill(bgColor);
 
         // Cell borders
-        doc.rect(36, currentY, pageWidth, rowHeight).stroke('#E2E8F0');
+        doc.rect(36, currentY, pageWidth, rowHeight).stroke('#CBD5E1');
 
+        // Draw individual cells with bounded height and ellipsis
         doc.fillColor('#0F172A').fontSize(7.5).font('Helvetica');
         row.forEach((cell, cellIndex) => {
-          doc.text(String(cell || 'N/A'), 36 + cellIndex * colWidth + 4, currentY + 6, {
-            width: colWidth - 8,
+          doc.text(String(cell || 'N/A'), 36 + colPositions[cellIndex] + 4, currentY + 5, {
+            width: colWidths[cellIndex] - 8,
+            height: rowHeight - 6,
             ellipsis: true,
+            lineGap: 1,
           });
         });
 
@@ -200,7 +276,7 @@ const buildPDFBuffer = (title, headers, rows, user, filterDesc = '', summary = n
           .text(
             `Page ${i + 1} of ${range.count}  •  Confidential Law Enforcement Document  •  CrimeTrack System`,
             36,
-            doc.page.height - 30,
+            doc.page.height - 28,
             { align: 'center', width: pageWidth }
           );
       }
