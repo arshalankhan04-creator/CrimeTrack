@@ -4,6 +4,8 @@ const FIR = require('../models/FIR');
 const Case = require('../models/Case');
 const Crime = require('../models/Crime');
 const Criminal = require('../models/Criminal');
+const User = require('../models/User');
+const Investigation = require('../models/Investigation');
 
 /**
  * CSV String Escaper
@@ -15,6 +17,16 @@ const escapeCSV = (value) => {
     return `"${stringValue.replace(/"/g, '""')}"`;
   }
   return `"${stringValue}"`;
+};
+
+/**
+ * Sanitize query parameters (handle undefined, null, empty strings, 'ALL', etc.)
+ */
+const sanitizeParam = (val) => {
+  if (!val || val === 'undefined' || val === 'null' || String(val).trim() === '' || String(val).trim().toUpperCase() === 'ALL') {
+    return undefined;
+  }
+  return String(val).trim();
 };
 
 /**
@@ -41,12 +53,21 @@ const getAccessibleCaseIds = async (user) => {
  * Helper for Date Range Query
  */
 const buildDateRangeQuery = (field, dateFrom, dateTo) => {
+  const from = sanitizeParam(dateFrom);
+  const to = sanitizeParam(dateTo);
   const range = {};
-  if (dateFrom) range.$gte = new Date(dateFrom);
-  if (dateTo) {
-    const toDate = new Date(dateTo);
-    toDate.setHours(23, 59, 59, 999);
-    range.$lte = toDate;
+  if (from) {
+    const dFrom = new Date(from);
+    if (!isNaN(dFrom.getTime())) {
+      range.$gte = dFrom;
+    }
+  }
+  if (to) {
+    const dTo = new Date(to);
+    if (!isNaN(dTo.getTime())) {
+      dTo.setHours(23, 59, 59, 999);
+      range.$lte = dTo;
+    }
   }
   return Object.keys(range).length > 0 ? { [field]: range } : {};
 };
@@ -290,7 +311,7 @@ const buildExcelBuffer = async (sheetName, title, headers, rows, user, filterDes
 /**
  * Generate FIR Report (CSV / JSON / PDF / EXCEL)
  */
-const generateFIRReport = async (filters, user, format = 'csv') => {
+const generateFIRReport = async (filters = {}, user, format = 'csv') => {
   const { dateFrom, dateTo, crimeType, assignedOfficerId } = filters;
   const query = { isDeleted: false, ...buildDateRangeQuery('incidentDate', dateFrom, dateTo) };
 
@@ -300,12 +321,14 @@ const generateFIRReport = async (filters, user, format = 'csv') => {
   } else if (user.role === 'VIEWER') {
     if (!user.supervisorOfficerId) query.assignedOfficerId = null;
     else query.assignedOfficerId = user.supervisorOfficerId;
-  } else if (user.role === 'ADMIN' && assignedOfficerId) {
-    query.assignedOfficerId = assignedOfficerId;
+  } else if (user.role === 'ADMIN') {
+    const sanitizedOfficer = sanitizeParam(assignedOfficerId);
+    if (sanitizedOfficer) query.assignedOfficerId = sanitizedOfficer;
   }
 
-  if (crimeType && crimeType.trim() !== '') {
-    query.crimeType = crimeType.trim().toUpperCase();
+  const sanitizedCrimeType = sanitizeParam(crimeType);
+  if (sanitizedCrimeType) {
+    query.crimeType = sanitizedCrimeType.toUpperCase();
   }
 
   const firs = await FIR.find(query)
@@ -343,13 +366,13 @@ const generateFIRReport = async (filters, user, format = 'csv') => {
   ]);
 
   if (format === 'pdf') {
-    const filterDesc = `Crime Category: ${crimeType || 'All Categories'} | Date Range: ${dateFrom || 'Start'} to ${dateTo || 'Present'}`;
+    const filterDesc = `Crime Category: ${sanitizedCrimeType || 'All Categories'} | Date Range: ${sanitizeParam(dateFrom) || 'Start'} to ${sanitizeParam(dateTo) || 'Present'}`;
     const summary = await getReportSummary(filters, user);
     return await buildPDFBuffer('FIR Complaints Ledger Report', headers, rawRows, user, filterDesc, summary);
   }
 
   if (format === 'excel' || format === 'xlsx') {
-    const filterDesc = `Crime Category: ${crimeType || 'All Categories'} | Date Range: ${dateFrom || 'Start'} to ${dateTo || 'Present'}`;
+    const filterDesc = `Crime Category: ${sanitizedCrimeType || 'All Categories'} | Date Range: ${sanitizeParam(dateFrom) || 'Start'} to ${sanitizeParam(dateTo) || 'Present'}`;
     const summary = await getReportSummary(filters, user);
     return await buildExcelBuffer('FIR Complaints', 'FIR Complaints Ledger Report', headers, rawRows, user, filterDesc, summary);
   }
@@ -362,7 +385,7 @@ const generateFIRReport = async (filters, user, format = 'csv') => {
 /**
  * Generate Case Clearance & Investigation Report (CSV / JSON / PDF / EXCEL)
  */
-const generateCaseReport = async (filters, user, format = 'csv') => {
+const generateCaseReport = async (filters = {}, user, format = 'csv') => {
   const { dateFrom, dateTo, status, priority, assignedOfficerId } = filters;
   const query = { isDeleted: false, ...buildDateRangeQuery('createdAt', dateFrom, dateTo) };
 
@@ -372,16 +395,19 @@ const generateCaseReport = async (filters, user, format = 'csv') => {
   } else if (user.role === 'VIEWER') {
     if (!user.supervisorOfficerId) query.assignedOfficerId = null;
     else query.assignedOfficerId = user.supervisorOfficerId;
-  } else if (user.role === 'ADMIN' && assignedOfficerId) {
-    query.assignedOfficerId = assignedOfficerId;
+  } else if (user.role === 'ADMIN') {
+    const sanitizedOfficer = sanitizeParam(assignedOfficerId);
+    if (sanitizedOfficer) query.assignedOfficerId = sanitizedOfficer;
   }
 
-  if (status && status.trim() !== '') {
-    query.status = status.trim().toUpperCase();
+  const sanitizedStatus = sanitizeParam(status);
+  if (sanitizedStatus) {
+    query.status = sanitizedStatus.toUpperCase();
   }
 
-  if (priority && priority.trim() !== '') {
-    query.priority = priority.trim().toUpperCase();
+  const sanitizedPriority = sanitizeParam(priority);
+  if (sanitizedPriority) {
+    query.priority = sanitizedPriority.toUpperCase();
   }
 
   const cases = await Case.find(query)
@@ -422,13 +448,13 @@ const generateCaseReport = async (filters, user, format = 'csv') => {
   ]);
 
   if (format === 'pdf') {
-    const filterDesc = `Status: ${status || 'All'} | Priority: ${priority || 'All'} | Dates: ${dateFrom || 'Start'} to ${dateTo || 'Present'}`;
+    const filterDesc = `Status: ${sanitizedStatus || 'All'} | Priority: ${sanitizedPriority || 'All'} | Dates: ${sanitizeParam(dateFrom) || 'Start'} to ${sanitizeParam(dateTo) || 'Present'}`;
     const summary = await getReportSummary(filters, user);
     return await buildPDFBuffer('Case Clearance & Investigation Dossier', headers, rawRows, user, filterDesc, summary);
   }
 
   if (format === 'excel' || format === 'xlsx') {
-    const filterDesc = `Status: ${status || 'All'} | Priority: ${priority || 'All'} | Dates: ${dateFrom || 'Start'} to ${dateTo || 'Present'}`;
+    const filterDesc = `Status: ${sanitizedStatus || 'All'} | Priority: ${sanitizedPriority || 'All'} | Dates: ${sanitizeParam(dateFrom) || 'Start'} to ${sanitizeParam(dateTo) || 'Present'}`;
     const summary = await getReportSummary(filters, user);
     return await buildExcelBuffer('Case Dossier', 'Case Clearance & Investigation Dossier', headers, rawRows, user, filterDesc, summary);
   }
@@ -441,7 +467,7 @@ const generateCaseReport = async (filters, user, format = 'csv') => {
 /**
  * Generate Crime Classification Report (CSV / JSON / PDF / EXCEL)
  */
-const generateCrimeReport = async (filters, user, format = 'csv') => {
+const generateCrimeReport = async (filters = {}, user, format = 'csv') => {
   const { dateFrom, dateTo, crimeType, severity } = filters;
   const query = { isDeleted: false, ...buildDateRangeQuery('crimeDate', dateFrom, dateTo) };
 
@@ -450,12 +476,14 @@ const generateCrimeReport = async (filters, user, format = 'csv') => {
     query.caseId = { $in: accessibleCaseIds };
   }
 
-  if (crimeType && crimeType.trim() !== '') {
-    query.crimeType = crimeType.trim().toUpperCase();
+  const sanitizedCrimeType = sanitizeParam(crimeType);
+  if (sanitizedCrimeType) {
+    query.crimeType = sanitizedCrimeType.toUpperCase();
   }
 
-  if (severity && severity.trim() !== '') {
-    query.severity = severity.trim().toUpperCase();
+  const sanitizedSeverity = sanitizeParam(severity);
+  if (sanitizedSeverity) {
+    query.severity = sanitizedSeverity.toUpperCase();
   }
 
   const crimes = await Crime.find(query)
@@ -495,12 +523,12 @@ const generateCrimeReport = async (filters, user, format = 'csv') => {
   ]);
 
   if (format === 'pdf') {
-    const filterDesc = `Crime Category: ${crimeType || 'All'} | Severity: ${severity || 'All'} | Dates: ${dateFrom || 'Start'} to ${dateTo || 'Present'}`;
+    const filterDesc = `Crime Category: ${sanitizedCrimeType || 'All'} | Severity: ${sanitizedSeverity || 'All'} | Dates: ${sanitizeParam(dateFrom) || 'Start'} to ${sanitizeParam(dateTo) || 'Present'}`;
     return await buildPDFBuffer('Crime Incidents & Classification Report', headers, rawRows, user, filterDesc);
   }
 
   if (format === 'excel' || format === 'xlsx') {
-    const filterDesc = `Crime Category: ${crimeType || 'All'} | Severity: ${severity || 'All'} | Dates: ${dateFrom || 'Start'} to ${dateTo || 'Present'}`;
+    const filterDesc = `Crime Category: ${sanitizedCrimeType || 'All'} | Severity: ${sanitizedSeverity || 'All'} | Dates: ${sanitizeParam(dateFrom) || 'Start'} to ${sanitizeParam(dateTo) || 'Present'}`;
     return await buildExcelBuffer('Crime Incidents', 'Crime Incidents & Classification Report', headers, rawRows, user, filterDesc);
   }
 
@@ -512,7 +540,7 @@ const generateCrimeReport = async (filters, user, format = 'csv') => {
 /**
  * Generate Criminal Master Directory Report (CSV / JSON / PDF / EXCEL)
  */
-const generateCriminalReport = async (filters, user, format = 'csv') => {
+const generateCriminalReport = async (filters = {}, user, format = 'csv') => {
   const query = { isDeleted: false };
 
   const accessibleCaseIds = await getAccessibleCaseIds(user);
@@ -562,7 +590,7 @@ const generateCriminalReport = async (filters, user, format = 'csv') => {
 /**
  * Get Filtered Report Summary Metrics
  */
-const getReportSummary = async (filters, user) => {
+const getReportSummary = async (filters = {}, user) => {
   const { dateFrom, dateTo } = filters;
   const firDateQuery = buildDateRangeQuery('incidentDate', dateFrom, dateTo);
   const caseDateQuery = buildDateRangeQuery('createdAt', dateFrom, dateTo);
@@ -598,8 +626,8 @@ const getReportSummary = async (filters, user) => {
     resolved,
     resolutionRate,
     period: {
-      from: dateFrom || 'All time',
-      to: dateTo || 'Present',
+      from: sanitizeParam(dateFrom) || 'All time',
+      to: sanitizeParam(dateTo) || 'Present',
     },
   };
 };

@@ -1,6 +1,19 @@
 import api from './api';
 
 /**
+ * Clean and build URL query string safely without stringified 'undefined' or 'null'
+ */
+const buildCleanQuery = (params = {}) => {
+  const cleanParams = {};
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '' && val !== 'undefined' && val !== 'null') {
+      cleanParams[key] = val;
+    }
+  });
+  return new URLSearchParams(cleanParams).toString();
+};
+
+/**
  * Reports & Data Export API Client
  */
 export const reportService = {
@@ -21,8 +34,8 @@ export const reportService = {
   downloadPDF: async (type, params = {}) => {
     const endpoint = `/reports/${type}/export`;
     const token = localStorage.getItem('token');
-    const query = new URLSearchParams({ ...params, format: 'pdf' }).toString();
-    const url = `/api${endpoint}?${query}`;
+    const query = buildCleanQuery({ ...params, format: 'pdf' });
+    const url = `/api${endpoint}${query ? `?${query}` : ''}`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -54,8 +67,8 @@ export const reportService = {
   downloadExcel: async (type, params = {}) => {
     const endpoint = `/reports/${type}/export`;
     const token = localStorage.getItem('token');
-    const query = new URLSearchParams({ ...params, format: 'excel' }).toString();
-    const url = `/api${endpoint}?${query}`;
+    const query = buildCleanQuery({ ...params, format: 'excel' });
+    const url = `/api${endpoint}${query ? `?${query}` : ''}`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -87,10 +100,8 @@ export const reportService = {
   downloadCSV: async (type, params = {}) => {
     const endpoint = `/reports/${type}/export`;
     const token = localStorage.getItem('token');
-    
-    // Construct query string
-    const query = new URLSearchParams({ ...params, format: 'csv' }).toString();
-    const url = `/api${endpoint}?${query}`;
+    const query = buildCleanQuery({ ...params, format: 'csv' });
+    const url = `/api${endpoint}${query ? `?${query}` : ''}`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -108,8 +119,6 @@ export const reportService = {
     const downloadUrl = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = downloadUrl;
-    
-    // Extract filename from header or fallback
     const timestamp = new Date().toISOString().slice(0, 10);
     link.download = `CrimeTrack_${type.toUpperCase()}_Report_${timestamp}.csv`;
     document.body.appendChild(link);
@@ -144,3 +153,4 @@ export const reportService = {
 };
 
 export default reportService;
+

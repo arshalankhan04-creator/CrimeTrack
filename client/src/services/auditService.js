@@ -1,6 +1,19 @@
 import api from './api';
 
 /**
+ * Clean and build URL query string safely without stringified 'undefined' or 'null'
+ */
+const buildCleanQuery = (params = {}) => {
+  const cleanParams = {};
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '' && val !== 'undefined' && val !== 'null') {
+      cleanParams[key] = val;
+    }
+  });
+  return new URLSearchParams(cleanParams).toString();
+};
+
+/**
  * Audit Logs & Security Trails API Client
  */
 export const auditService = {
@@ -33,8 +46,8 @@ export const auditService = {
    */
   downloadCSV: async (params = {}) => {
     const token = localStorage.getItem('token');
-    const query = new URLSearchParams({ ...params, format: 'csv' }).toString();
-    const url = `/api/audit-logs/export?${query}`;
+    const query = buildCleanQuery({ ...params, format: 'csv' });
+    const url = `/api/audit-logs/export${query ? `?${query}` : ''}`;
 
     const response = await fetch(url, {
       method: 'GET',
