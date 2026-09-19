@@ -22,17 +22,18 @@ export const reportService = {
     const endpoint = `/reports/${type}/export`;
     const token = localStorage.getItem('token');
     const query = new URLSearchParams({ ...params, format: 'pdf' }).toString();
-    const url = `http://localhost:5000/api${endpoint}?${query}`;
+    const url = `/api${endpoint}?${query}`;
 
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to generate PDF export.');
+      const errorJson = await response.json().catch(() => null);
+      throw new Error(errorJson?.message || 'Failed to generate PDF export.');
     }
 
     const blob = await response.blob();
@@ -54,17 +55,18 @@ export const reportService = {
     const endpoint = `/reports/${type}/export`;
     const token = localStorage.getItem('token');
     const query = new URLSearchParams({ ...params, format: 'excel' }).toString();
-    const url = `http://localhost:5000/api${endpoint}?${query}`;
+    const url = `/api${endpoint}?${query}`;
 
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to generate Excel export.');
+      const errorJson = await response.json().catch(() => null);
+      throw new Error(errorJson?.message || 'Failed to generate Excel export.');
     }
 
     const blob = await response.blob();
@@ -88,17 +90,18 @@ export const reportService = {
     
     // Construct query string
     const query = new URLSearchParams({ ...params, format: 'csv' }).toString();
-    const url = `http://localhost:5000/api${endpoint}?${query}`;
+    const url = `/api${endpoint}?${query}`;
 
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to generate CSV export.');
+      const errorJson = await response.json().catch(() => null);
+      throw new Error(errorJson?.message || 'Failed to generate CSV export.');
     }
 
     const blob = await response.blob();

@@ -34,17 +34,18 @@ export const auditService = {
   downloadCSV: async (params = {}) => {
     const token = localStorage.getItem('token');
     const query = new URLSearchParams({ ...params, format: 'csv' }).toString();
-    const url = `http://localhost:5000/api/audit-logs/export?${query}`;
+    const url = `/api/audit-logs/export?${query}`;
 
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        Authorization: `Bearer ${token}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to export audit log trail.');
+      const errorJson = await response.json().catch(() => null);
+      throw new Error(errorJson?.message || 'Failed to export audit log trail.');
     }
 
     const blob = await response.blob();
