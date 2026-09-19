@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Shield, 
   Search, 
@@ -8,19 +8,69 @@ import {
   Menu,
   X,
   User,
-  Radio
+  Radio,
+  CheckCheck,
+  Trash2,
+  ExternalLink,
+  ChevronDown,
+  LayoutDashboard,
+  ShieldAlert,
+  Clock,
+  CheckCircle2,
+  Inbox
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import Badge from '../common/Badge';
 
-export default function Navbar({ onToggleMobileMenu }) {
+export default function Navbar({ onToggleMobileMenu, onOpenProfile }) {
   const { user, isAuthenticated, logout } = useAuth();
+  const { 
+    notifications, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification, 
+    clearAllNotifications 
+  } = useNotifications();
+  
   const navigate = useNavigate();
   const [quickQuery, setQuickQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
+  const notifRef = useRef(null);
+  const profileRef = useRef(null);
+
+  // Handle click outside to close dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notifRef.current && !notifRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Handle Escape key to close dropdowns
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowNotifications(false);
+        setShowProfileMenu(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleLogout = async () => {
+    setShowProfileMenu(false);
     await logout();
     navigate('/login', { replace: true });
   };
@@ -40,8 +90,21 @@ export default function Navbar({ onToggleMobileMenu }) {
     return name.slice(0, 2).toUpperCase();
   };
 
+  const getRoleVariant = (role) => {
+    if (role === 'ADMIN') return 'danger';
+    if (role === 'OFFICER') return 'primary';
+    return 'warning';
+  };
+
+  const getDashboardPath = () => {
+    if (user?.role === 'ADMIN') return '/admin/dashboard';
+    if (user?.role === 'OFFICER') return '/officer/dashboard';
+    if (user?.role === 'VIEWER') return '/viewer/dashboard';
+    return '/';
+  };
+
   return (
-    <header className="bg-navy-900 text-white border-b border-navy-800 sticky top-0 z-40 shadow-sm">
+    <header className="bg-navy-900 text-white border-b border-navy-800 sticky top-0 z-30 shadow-sm font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-3">
           
@@ -52,7 +115,7 @@ export default function Navbar({ onToggleMobileMenu }) {
                 type="button"
                 onClick={onToggleMobileMenu}
                 className="md:hidden p-2 rounded-lg bg-navy-800 text-slate-300 hover:text-white hover:bg-navy-700 transition"
-                title="Toggle Navigation Menu"
+                aria-label="Open navigation menu"
               >
                 <Menu className="w-5 h-5" />
               </button>
@@ -99,48 +162,140 @@ export default function Navbar({ onToggleMobileMenu }) {
             </div>
           )}
 
-          {/* Right: Controls & User Officer Dossier */}
+          {/* Right: Notification Bell & User Profile */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {isAuthenticated ? (
               <>
-                {/* Notifications Dispatch Popover */}
-                <div className="relative">
+                {/* Notification Bell & Dropdown Popover */}
+                <div className="relative" ref={notifRef}>
                   <button
                     type="button"
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className="p-2 rounded-lg bg-navy-800/80 hover:bg-navy-800 text-slate-300 hover:text-white border border-navy-700/80 transition relative"
-                    title="Station Dispatch & System Notices"
+                    onClick={() => {
+                      setShowNotifications(!showNotifications);
+                      setShowProfileMenu(false);
+                    }}
+                    className={`p-2 rounded-lg border transition relative ${
+                      showNotifications 
+                        ? 'bg-navy-800 text-white border-navy-600' 
+                        : 'bg-navy-800/80 hover:bg-navy-800 text-slate-300 hover:text-white border-navy-700/80'
+                    }`}
+                    aria-label={`View notifications (${unreadCount} unread)`}
+                    aria-expanded={showNotifications}
                   >
                     <Bell className="w-4 h-4" />
-                    <span className="w-2 h-2 rounded-full bg-brand-blue absolute top-1.5 right-1.5"></span>
+                    {/* Unread Indicator: Render ONLY when unreadCount > 0 */}
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-blue px-1 text-[9px] font-bold text-white shadow-xs animate-in zoom-in-50">
+                        {unreadCount}
+                      </span>
+                    )}
                   </button>
 
+                  {/* Notification Dropdown Panel */}
                   {showNotifications && (
-                    <div className="absolute right-0 mt-2 w-72 bg-navy-900 border border-navy-700 rounded-xl shadow-2xl p-3 z-50 text-xs space-y-2 font-sans">
-                      <div className="flex items-center justify-between border-b border-navy-800 pb-2">
-                        <span className="font-bold text-white text-[11px] uppercase tracking-wider">Station Dispatch Feed</span>
-                        <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                          Online
+                    <div className="absolute right-0 mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-navy-900 border border-navy-700 rounded-xl shadow-2xl p-0 z-50 text-xs font-sans animate-in fade-in slide-in-from-top-2 duration-150 overflow-hidden">
+                      {/* Dropdown Header */}
+                      <div className="p-3.5 bg-navy-950/90 border-b border-navy-800 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-xs uppercase tracking-wider">
+                            Station Dispatch
+                          </span>
+                          {unreadCount > 0 ? (
+                            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-mono bg-blue-500/20 text-blue-300 border border-blue-500/30 font-bold">
+                              {unreadCount} unread
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              All caught up
+                            </span>
+                          )}
+                        </div>
+
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={markAllAsRead}
+                            className="text-[11px] text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 transition"
+                          >
+                            <CheckCheck className="w-3.5 h-3.5" />
+                            <span>Mark all read</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Notification List Container */}
+                      <div className="max-h-72 overflow-y-auto divide-y divide-navy-800/60 p-1">
+                        {notifications.length === 0 ? (
+                          <div className="py-8 text-center space-y-2 text-slate-400">
+                            <Inbox className="w-8 h-8 text-slate-500 mx-auto" />
+                            <p className="font-semibold text-xs text-slate-300">No Notifications</p>
+                            <p className="text-[11px] text-slate-500">You're all caught up with station dispatches.</p>
+                          </div>
+                        ) : (
+                          notifications.map((notif) => (
+                            <div
+                              key={notif.id}
+                              onClick={() => markAsRead(notif.id)}
+                              className={`p-3 rounded-lg transition-colors cursor-pointer flex items-start gap-2.5 ${
+                                notif.isRead 
+                                  ? 'hover:bg-navy-800/40 text-slate-400' 
+                                  : 'bg-navy-800/70 hover:bg-navy-800 text-slate-200 border-l-2 border-l-brand-blue'
+                              }`}
+                            >
+                              <div className="pt-0.5 shrink-0">
+                                {!notif.isRead ? (
+                                  <span className="w-2 h-2 rounded-full bg-brand-blue block mt-1 shadow-xs shadow-brand-blue/50"></span>
+                                ) : (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0 space-y-0.5">
+                                <div className="flex items-center justify-between gap-1">
+                                  <p className={`text-xs truncate ${!notif.isRead ? 'font-bold text-white' : 'font-medium text-slate-300'}`}>
+                                    {notif.title}
+                                  </p>
+                                  <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                                    {notif.time}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">
+                                  {notif.message}
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteNotification(notif.id);
+                                }}
+                                className="text-slate-500 hover:text-rose-400 p-1 rounded transition opacity-60 hover:opacity-100"
+                                aria-label="Dismiss notification"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Dropdown Footer */}
+                      <div className="p-2.5 bg-navy-950/80 border-t border-navy-800 flex items-center justify-between text-[11px]">
+                        <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                          <Radio className="w-3 h-3 text-emerald-400" />
+                          Central Terminal Feed
                         </span>
+                        {notifications.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={clearAllNotifications}
+                            className="text-slate-400 hover:text-slate-200 transition"
+                          >
+                            Clear all
+                          </button>
+                        )}
                       </div>
-                      <div className="space-y-1.5 py-1">
-                        <div className="p-2 rounded-lg bg-navy-800/60 border border-navy-700/50 text-slate-300">
-                          <p className="font-semibold text-white text-[11px]">Audit Trail Active</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">Immutable record tracking active on all operational registries.</p>
-                        </div>
-                        <div className="p-2 rounded-lg bg-navy-800/60 border border-navy-700/50 text-slate-300">
-                          <p className="font-semibold text-white text-[11px]">Role Scope Enforced</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">Access boundaries strictly verified per active officer session.</p>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setShowNotifications(false)}
-                        className="w-full text-center py-1 text-[10px] text-slate-400 hover:text-slate-200 transition"
-                      >
-                        Close
-                      </button>
                     </div>
                   )}
                 </div>
@@ -148,39 +303,101 @@ export default function Navbar({ onToggleMobileMenu }) {
                 {/* Vertical Divider */}
                 <div className="h-6 w-[1px] bg-navy-800 hidden sm:block"></div>
 
-                {/* User Profile Info */}
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-navy-800 text-white font-bold text-xs flex items-center justify-center border border-navy-700 shadow-inner">
-                    {getInitials(user?.name)}
-                  </div>
-                  
-                  <div className="hidden sm:block text-left">
-                    <p className="text-xs font-bold text-white tracking-tight truncate max-w-[120px]">
-                      {user?.name}
-                    </p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Badge variant={user?.role?.toLowerCase()} size="sm">
-                        {user?.role}
-                      </Badge>
-                      {user?.employeeId && (
-                        <span className="text-[9px] text-slate-400 font-mono">
-                          {user.employeeId}
-                        </span>
-                      )}
+                {/* User Profile Popover in Navbar */}
+                <div className="relative" ref={profileRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowProfileMenu(!showProfileMenu);
+                      setShowNotifications(false);
+                    }}
+                    className={`flex items-center gap-2 p-1 sm:p-1.5 rounded-xl border transition ${
+                      showProfileMenu 
+                        ? 'bg-navy-800 border-navy-600' 
+                        : 'bg-navy-800/70 hover:bg-navy-800 border-navy-700/80'
+                    }`}
+                    aria-label="User profile and session menu"
+                    aria-expanded={showProfileMenu}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-blue to-blue-600 text-white font-bold text-xs flex items-center justify-center border border-navy-700 shadow-inner shrink-0">
+                      {getInitials(user?.name)}
                     </div>
-                  </div>
-                </div>
+                    
+                    <div className="hidden sm:block text-left pr-1">
+                      <p className="text-xs font-bold text-white tracking-tight truncate max-w-[110px]">
+                        {user?.name}
+                      </p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Badge variant={getRoleVariant(user?.role)} size="sm">
+                          {user?.role}
+                        </Badge>
+                      </div>
+                    </div>
 
-                {/* Sign Out Button */}
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-navy-800/80 hover:bg-rose-950/60 text-slate-300 hover:text-rose-300 rounded-lg text-xs font-semibold border border-navy-700/80 hover:border-rose-800/60 transition"
-                  title="Sign Out of Terminal"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span className="hidden md:inline">Sign Out</span>
-                </button>
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${showProfileMenu ? 'rotate-180 text-white' : ''}`} />
+                  </button>
+
+                  {/* Profile Menu Dropdown */}
+                  {showProfileMenu && (
+                    <div className="absolute right-0 mt-2 w-64 bg-navy-900 border border-navy-700 rounded-xl shadow-2xl p-0 z-50 text-xs font-sans animate-in fade-in slide-in-from-top-2 duration-150 overflow-hidden">
+                      {/* User Dossier Summary Card */}
+                      <div className="p-3.5 bg-navy-950/90 border-b border-navy-800 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-bold text-white text-xs truncate">
+                            {user?.name}
+                          </p>
+                          <Badge variant={getRoleVariant(user?.role)} size="sm">
+                            {user?.role}
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {user?.email}
+                        </p>
+                        {user?.employeeId && (
+                          <p className="text-[10px] text-blue-400 font-mono pt-0.5">
+                            ID: {user.employeeId}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Menu Actions */}
+                      <div className="p-1.5 space-y-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowProfileMenu(false);
+                            if (onOpenProfile) onOpenProfile();
+                          }}
+                          className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-slate-200 hover:text-white hover:bg-navy-800 transition font-medium text-xs"
+                        >
+                          <User className="w-4 h-4 text-brand-blue" />
+                          <span>My Profile Dossier</span>
+                        </button>
+
+                        <Link
+                          to={getDashboardPath()}
+                          onClick={() => setShowProfileMenu(false)}
+                          className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-slate-200 hover:text-white hover:bg-navy-800 transition font-medium text-xs"
+                        >
+                          <LayoutDashboard className="w-4 h-4 text-emerald-400" />
+                          <span>Role Workspace</span>
+                        </Link>
+                      </div>
+
+                      {/* Logout Action */}
+                      <div className="p-1.5 border-t border-navy-800">
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-rose-300 hover:text-rose-200 hover:bg-rose-950/50 transition font-medium text-xs"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign Out of Terminal</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <Link
@@ -198,3 +415,4 @@ export default function Navbar({ onToggleMobileMenu }) {
     </header>
   );
 }
+
