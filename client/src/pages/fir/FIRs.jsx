@@ -224,8 +224,9 @@ export default function FIRs() {
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Header Banner */}
-      <PageHeader
+      <div className="space-y-6 print:hidden">
+        {/* Header Banner */}
+        <PageHeader
         badge="COMPLAINT REGISTRY"
         badgeMeta="First Information Report (Section 154 Cr.P.C)"
         title="FIR Incident Management"
@@ -427,6 +428,8 @@ export default function FIRs() {
           onPageChange={(page) => fetchFIRs(page)}
           loading={loading}
         />
+      </div>
+      {/* End Main Interactive Page Content print:hidden wrapper */}
       </div>
 
       {/* REGISTER FIR MODAL */}
@@ -662,6 +665,7 @@ export default function FIRs() {
           subtitle="Legal document generated under statutory criminal procedure."
           icon={Shield}
           maxWidth="max-w-3xl"
+          hideHeaderOnPrint={true}
           footer={
             <>
               <Button
@@ -682,92 +686,108 @@ export default function FIRs() {
             </>
           }
         >
-          <div className="p-4 sm:p-6 space-y-6 text-slate-800 text-xs">
-            {/* Document Header */}
-            <div className="text-center pb-4 border-b-2 border-navy-900">
-              <h2 className="text-base sm:text-lg font-bold text-navy-900 uppercase tracking-wider">
-                Police Department • Criminal Investigation Wing
-              </h2>
-              <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
-                FIRST INFORMATION REPORT UNDER SECTION 154 CR.P.C.
-              </p>
-              <div className="mt-3 flex items-center justify-between text-xs font-mono">
-                <span>FIR NO: <strong className="text-navy-900">{selectedFIR.firNumber}</strong></span>
-                <span>DATE RECORDED: {new Date(selectedFIR.createdAt).toLocaleDateString()}</span>
+          <div className="p-4 sm:p-6 space-y-5 text-slate-900 text-xs font-sans print:p-0 print:space-y-4">
+            {/* Official Police Dossier Print Header */}
+            <div className="text-center pb-3 border-b-2 border-slate-900">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-300">
+                <div className="text-left">
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 uppercase tracking-wider">
+                    State Police Department • Criminal Investigation Wing
+                  </h2>
+                  <p className="text-[11px] text-slate-600 font-semibold">
+                    FIRST INFORMATION REPORT (F.I.R.) • RECORDED UNDER SECTION 154 CR.P.C.
+                  </p>
+                </div>
+                <div className="text-right text-[11px] font-mono text-slate-700">
+                  <p className="font-bold text-slate-900">DISTRICT CENTRAL POLICE STATION</p>
+                  <p className="text-slate-500">Security: Statutory Record</p>
+                </div>
+              </div>
+              <div className="mt-2.5 flex items-center justify-between text-xs font-mono font-bold text-slate-800">
+                <span>FIR NO: <strong className="text-navy-900 text-sm">{selectedFIR.firNumber}</strong></span>
+                <span>DATE REGISTERED: {new Date(selectedFIR.createdAt).toLocaleDateString()}</span>
+                <span>TIME: {new Date(selectedFIR.createdAt).toLocaleTimeString()}</span>
               </div>
             </div>
 
-            {/* Grid 1: Basic Information */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            {/* Classification & Assigned Personnel Strip */}
+            <div className="grid grid-cols-2 gap-3 bg-slate-50 print:bg-transparent p-3 rounded-lg border border-slate-200 print:border-slate-300">
               <div>
-                <p className="text-[10px] uppercase font-bold text-slate-400">Crime Category</p>
+                <p className="text-[10px] uppercase font-bold text-slate-500">Crime Classification Category</p>
                 <p className="font-bold text-sm text-navy-900 mt-0.5">{selectedFIR.crimeType}</p>
               </div>
               <div>
-                <p className="text-[10px] uppercase font-bold text-slate-400">Investigating Officer</p>
+                <p className="text-[10px] uppercase font-bold text-slate-500">Assigned Investigating Officer</p>
                 <p className="font-bold text-sm text-navy-900 mt-0.5">{selectedFIR.assignedOfficerId?.name || 'Unassigned'}</p>
-                <p className="text-[10px] font-mono text-slate-500">{selectedFIR.assignedOfficerId?.employeeId || ''}</p>
+                <p className="text-[10px] font-mono text-slate-600">ID / Badge: {selectedFIR.assignedOfficerId?.employeeId || 'N/A'}</p>
               </div>
             </div>
 
-            {/* Grid 2: Complainant Details */}
-            <div className="space-y-2">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-navy-900 border-b pb-1">
+            {/* Section 1: Complainant Information */}
+            <div className="space-y-1.5">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-1">
                 1. Details of Complainant / Informant
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div className="grid grid-cols-2 gap-3 pt-1">
                 <div>
-                  <span className="text-slate-500">Legal Name:</span>
-                  <p className="font-semibold text-navy-900">{selectedFIR.complainantName}</p>
+                  <span className="text-slate-500 text-[11px]">Full Legal Name:</span>
+                  <p className="font-semibold text-slate-900">{selectedFIR.complainantName}</p>
                 </div>
                 <div>
-                  <span className="text-slate-500">Phone Number:</span>
-                  <p className="font-semibold text-navy-900 font-mono">{selectedFIR.complainantPhone}</p>
+                  <span className="text-slate-500 text-[11px]">Contact Telephone / Mobile:</span>
+                  <p className="font-semibold text-slate-900 font-mono">{selectedFIR.complainantPhone}</p>
                 </div>
-                <div className="sm:col-span-2">
-                  <span className="text-slate-500">Address:</span>
-                  <p className="font-semibold text-navy-900">{selectedFIR.complainantAddress || 'Not provided'}</p>
+                <div className="col-span-2">
+                  <span className="text-slate-500 text-[11px]">Present / Residential Address:</span>
+                  <p className="font-semibold text-slate-900">{selectedFIR.complainantAddress || 'Not provided by complainant'}</p>
                 </div>
               </div>
             </div>
 
-            {/* Grid 3: Incident Details */}
-            <div className="space-y-2">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-navy-900 border-b pb-1">
-                2. Incident Information
+            {/* Section 2: Incident Information */}
+            <div className="space-y-1.5">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-1">
+                2. Occurrence of Offence & Location Particulars
               </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div className="grid grid-cols-2 gap-3 pt-1">
                 <div>
-                  <span className="text-slate-500">Date & Time of Incident:</span>
-                  <p className="font-semibold text-navy-900">{new Date(selectedFIR.incidentDate).toLocaleString()}</p>
+                  <span className="text-slate-500 text-[11px]">Date & Time of Incident:</span>
+                  <p className="font-semibold text-slate-900">{new Date(selectedFIR.incidentDate).toLocaleString()}</p>
                 </div>
                 <div>
-                  <span className="text-slate-500">Place of Occurrence:</span>
-                  <p className="font-semibold text-navy-900">{selectedFIR.incidentPlace}</p>
+                  <span className="text-slate-500 text-[11px]">Place of Occurrence / Crime Scene:</span>
+                  <p className="font-semibold text-slate-900">{selectedFIR.incidentPlace}</p>
                 </div>
               </div>
             </div>
 
-            {/* Incident Narrative */}
-            <div className="space-y-2">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-navy-900 border-b pb-1">
-                3. Recorded Statement / Narrative
+            {/* Section 3: Statement Narrative */}
+            <div className="space-y-1.5">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 border-b border-slate-300 pb-1">
+                3. Recorded Complaint Statement & Narrative
               </h4>
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-slate-800 leading-relaxed whitespace-pre-wrap">
+              <div className="p-3.5 bg-slate-50 print:bg-white rounded-lg border border-slate-200 print:border-slate-300 text-slate-900 leading-relaxed whitespace-pre-wrap font-sans">
                 {selectedFIR.description}
               </div>
             </div>
 
-            {/* Signatures Footer */}
-            <div className="pt-8 border-t border-slate-200 grid grid-cols-2 gap-8 text-center text-[11px] text-slate-500">
+            {/* Section 4: Signatures & Verification Block */}
+            <div className="pt-6 border-t-2 border-slate-900 grid grid-cols-2 gap-8 text-center text-[11px] text-slate-600 print:pt-8">
               <div>
-                <div className="h-10 border-b border-slate-300 w-3/4 mx-auto"></div>
-                <p className="mt-2 font-semibold text-navy-900">Complainant Signature</p>
+                <div className="h-12 border-b border-slate-400 w-3/4 mx-auto"></div>
+                <p className="mt-2 font-bold text-slate-900">Signature / Thumb Impression of Informant</p>
+                <p className="text-[10px] text-slate-500">Recorded in presence of duty personnel</p>
               </div>
               <div>
-                <div className="h-10 border-b border-slate-300 w-3/4 mx-auto"></div>
-                <p className="mt-2 font-semibold text-navy-900">Duty Officer In-Charge</p>
+                <div className="h-12 border-b border-slate-400 w-3/4 mx-auto"></div>
+                <p className="mt-2 font-bold text-slate-900">Signature & Seal of Officer In-Charge</p>
+                <p className="text-[10px] text-slate-500">Police Station In-Charge / Duty Officer</p>
               </div>
+            </div>
+
+            {/* Confidentiality Footer Notice */}
+            <div className="pt-3 text-center text-[9px] font-mono text-slate-400 border-t border-slate-200 print:border-slate-300">
+              CONFIDENTIAL LAW ENFORCEMENT RECORD — GENERATED VIA CRIMETRACK PLATFORM
             </div>
           </div>
         </Modal>
