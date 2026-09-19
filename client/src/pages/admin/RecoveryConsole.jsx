@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   RotateCcw, 
+  RotateCw,
   History, 
   ShieldAlert, 
   CheckCircle2, 
@@ -11,6 +12,7 @@ import {
   ArrowRight,
   RefreshCw,
   Undo2,
+  Redo2,
   FileCode,
   Eye,
   AlertCircle
@@ -47,6 +49,7 @@ export default function RecoveryConsole() {
   // Modal States
   const [selectedLogForDiff, setSelectedLogForDiff] = useState(null);
   const [confirmRollbackLog, setConfirmRollbackLog] = useState(null);
+  const [confirmRedoLog, setConfirmRedoLog] = useState(null);
 
   const fetchConsoleData = async () => {
     setLoading(true);
@@ -58,9 +61,9 @@ export default function RecoveryConsole() {
         auditService.getStats(),
       ]);
 
-      // Reversible logs: items with non-empty oldValues and not UNDO_MUTATION
+      // Reversible logs: items with non-empty oldValues and not UNDO_MUTATION or REDO_MUTATION
       const reversible = (allLogsRes.data.items || []).filter(
-        (l) => l.oldValues && Object.keys(l.oldValues).length > 0 && l.action !== 'UNDO_MUTATION'
+        (l) => l.oldValues && Object.keys(l.oldValues).length > 0 && l.action !== 'UNDO_MUTATION' && l.action !== 'REDO_MUTATION'
       );
 
       setReversibleLogs(reversible);
@@ -94,12 +97,28 @@ export default function RecoveryConsole() {
     }
   };
 
+  const handleExecuteRedo = async () => {
+    if (!confirmRedoLog) return;
+    const logItem = confirmRedoLog;
+    setProcessingId(logItem._id);
+    try {
+      const res = await recoveryService.redoMutation(logItem._id);
+      showSuccess(res.data.message || `Redo executed: Action re-applied to ${logItem.entityType}.`);
+      setConfirmRedoLog(null);
+      fetchConsoleData();
+    } catch (err) {
+      showError(err.message || 'Failed to execute redo mutation.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
         title="Audit Recovery & Rollback Console"
-        description="Safely inspect previous data snapshots and revert accidental mutations or status transitions using tamper-evident audit logs."
+        description="Safely inspect previous data snapshots and revert accidental mutations or re-apply historical states using tamper-evident audit logs."
         breadcrumbs={[
           { label: 'Admin', path: '/admin/dashboard' },
           { label: 'System Recovery' },
@@ -119,14 +138,14 @@ export default function RecoveryConsole() {
       {/* KPI Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
-          title="Reversible Snapshots"
+          title="Reversible Snapshots (Undo)"
           value={reversibleLogs.length}
           subtitle="Available for one-click restoration"
           icon={RotateCcw}
           variant="warning"
         />
         <StatCard
-          title="Executed Rollbacks"
+          title="Recovery History (Undo / Redo)"
           value={recoveryHistory.length}
           subtitle="Historical state reversals recorded"
           icon={History}
@@ -160,7 +179,7 @@ export default function RecoveryConsole() {
           }`}
         >
           <Undo2 className="w-4 h-4 text-amber-600" />
-          <span>Reversible Actions Stream</span>
+          <span>Reversible Actions (Undo)</span>
           <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-100 text-amber-800">
             {reversibleLogs.length}
           </span>
@@ -175,19 +194,19 @@ export default function RecoveryConsole() {
           }`}
         >
           <History className="w-4 h-4 text-brand-blue" />
-          <span>Rollback Audit History</span>
+          <span>Rollback & Redo History</span>
           <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-700">
             {recoveryHistory.length}
           </span>
         </button>
       </div>
 
-      {/* TAB 1: REVERSIBLE ACTIONS */}
+      {/* TAB 1: REVERSIBLE ACTIONS (UNDO) */}
       {activeTab === 'REVERSIBLE' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-navy-900">Restorable Snapshot Ledger</h2>
+              <h2 className="text-sm font-bold text-navy-900">Restorable Snapshot Ledger (Undo Candidates)</h2>
               <p className="text-xs text-slate-500">
                 Mutations with verified pre-change snapshots available for atomic database rollback.
               </p>
@@ -233,7 +252,7 @@ export default function RecoveryConsole() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono mt-2">
                       <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-950">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] uppercase font-bold text-red-700">Previous Snapshot (To Restore)</span>
+                          <span className="text-[10px] uppercase font-bold text-red-700">Previous Snapshot (To Restore via Undo)</span>
                           <span className="text-[10px] text-red-600 font-bold">STATE BEFORE</span>
                         </div>
                         <pre className="text-[11px] overflow-x-auto max-h-24 whitespace-pre-wrap">
@@ -243,7 +262,7 @@ export default function RecoveryConsole() {
 
                       <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-950">
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-[10px] uppercase font-bold text-emerald-700">Applied State (To Overwrite)</span>
+                          <span className="text-[10px] uppercase font-bold text-emerald-700">Applied State (Current in DB)</span>
                           <span className="text-[10px] text-emerald-600 font-bold">STATE AFTER</span>
                         </div>
                         <pre className="text-[11px] overflow-x-auto max-h-24 whitespace-pre-wrap">
@@ -269,7 +288,7 @@ export default function RecoveryConsole() {
                       loading={processingId === log._id}
                       onClick={() => setConfirmRollbackLog(log)}
                     >
-                      Rollback
+                      Undo Action
                     </Button>
                   </div>
                 </div>
@@ -279,20 +298,20 @@ export default function RecoveryConsole() {
         </div>
       )}
 
-      {/* TAB 2: ROLLBACK HISTORY */}
+      {/* TAB 2: ROLLBACK & REDO HISTORY */}
       {activeTab === 'HISTORY' && (
         <div className="card-surface p-0 overflow-hidden">
           <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-navy-900">Rollback Execution History Ledger</h2>
-              <p className="text-xs text-slate-500">Forensic trail of all state restorations previously executed.</p>
+              <h2 className="text-sm font-bold text-navy-900">Rollback & Redo Execution History Ledger</h2>
+              <p className="text-xs text-slate-500">Forensic trail of all state restorations and forward re-applications.</p>
             </div>
             <span className="text-xs font-mono text-slate-500">{recoveryHistory.length} events</span>
           </div>
 
           {loading ? (
             <div className="p-4">
-              <TableSkeleton rows={4} columns={5} />
+              <TableSkeleton rows={4} columns={6} />
             </div>
           ) : recoveryHistory.length === 0 ? (
             <EmptyState
@@ -305,43 +324,68 @@ export default function RecoveryConsole() {
               <table className="app-table">
                 <thead>
                   <tr>
-                    <th>Restoration Timestamp</th>
-                    <th>Restored Entity</th>
-                    <th>Reverted Action</th>
+                    <th>Timestamp</th>
+                    <th>Action</th>
+                    <th>Target Entity</th>
+                    <th>Original Action</th>
                     <th>Authorized Admin</th>
-                    <th>Original Audit Ref</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {recoveryHistory.map((item) => (
-                    <tr key={item._id}>
-                      <td className="font-mono text-xs text-slate-600 whitespace-nowrap">
-                        {new Date(item.createdAt).toLocaleString()}
-                      </td>
-                      <td>
-                        <span className="font-bold text-navy-900">{item.entityType}</span>
-                        <span className="block text-[11px] font-mono text-slate-400">ID: {item.entityId}</span>
-                      </td>
-                      <td>
-                        <Badge variant="warning">
-                          {item.metadata?.revertedAction || 'MUTATION_REVERT'}
-                        </Badge>
-                      </td>
-                      <td className="text-xs text-slate-700">
-                        <span className="font-semibold text-navy-900">{item.userId?.name || 'Admin'}</span>
-                        <span className="block text-[11px] text-slate-500 font-mono">
-                          {item.userId?.employeeId || 'SUPER_ADMIN'}
-                        </span>
-                      </td>
-                      <td className="font-mono text-[11px] text-slate-500">
-                        {item.metadata?.revertedAuditId ? (
-                          <span className="bg-slate-100 px-2 py-0.5 rounded">{item.metadata.revertedAuditId}</span>
-                        ) : (
-                          'N/A'
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {recoveryHistory.map((item) => {
+                    const isUndo = item.action === 'UNDO_MUTATION';
+                    return (
+                      <tr key={item._id}>
+                        <td className="font-mono text-xs text-slate-600 whitespace-nowrap">
+                          {new Date(item.createdAt).toLocaleString()}
+                        </td>
+                        <td>
+                          <Badge variant={isUndo ? 'warning' : 'success'}>
+                            {item.action}
+                          </Badge>
+                        </td>
+                        <td>
+                          <span className="font-bold text-navy-900">{item.entityType}</span>
+                          <span className="block text-[11px] font-mono text-slate-400">ID: {item.entityId}</span>
+                        </td>
+                        <td>
+                          <span className="text-xs font-medium text-slate-700">
+                            {item.metadata?.revertedAction || item.metadata?.redoneAction || 'MUTATION'}
+                          </span>
+                          {item.metadata?.revertedAuditId && (
+                            <span className="block text-[10px] font-mono text-slate-400">
+                              Ref: {item.metadata.revertedAuditId}
+                            </span>
+                          )}
+                        </td>
+                        <td className="text-xs text-slate-700">
+                          <span className="font-semibold text-navy-900">{item.userId?.name || 'Admin'}</span>
+                          <span className="block text-[11px] text-slate-500 font-mono">
+                            {item.userId?.employeeId || 'SUPER_ADMIN'}
+                          </span>
+                        </td>
+                        <td>
+                          {isUndo ? (
+                            <Button
+                              variant="primary"
+                              size="xs"
+                              icon={RotateCw}
+                              loading={processingId === item._id}
+                              onClick={() => setConfirmRedoLog(item)}
+                              className="bg-brand-blue hover:bg-blue-700"
+                            >
+                              Redo
+                            </Button>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 font-mono italic">
+                              Re-applied
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -369,7 +413,7 @@ export default function RecoveryConsole() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <span className="text-xs font-bold text-red-700 uppercase tracking-wider block">
-                  Snapshot Before Mutation (Restorable)
+                  Snapshot Before Mutation (Restorable via Undo)
                 </span>
                 <div className="bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-xs overflow-auto max-h-80">
                   <pre>{JSON.stringify(selectedLogForDiff.oldValues, null, 2)}</pre>
@@ -378,7 +422,7 @@ export default function RecoveryConsole() {
 
               <div className="space-y-1.5">
                 <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider block">
-                  State After Mutation (Current)
+                  State After Mutation (Applied)
                 </span>
                 <div className="bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-xs overflow-auto max-h-80">
                   <pre>{JSON.stringify(selectedLogForDiff.newValues, null, 2)}</pre>
@@ -399,29 +443,47 @@ export default function RecoveryConsole() {
                   setConfirmRollbackLog(target);
                 }}
               >
-                Proceed to Rollback
+                Proceed to Undo
               </Button>
             </div>
           </div>
         </Modal>
       )}
 
-      {/* CONFIRM ROLLBACK DIALOG */}
+      {/* CONFIRM UNDO (ROLLBACK) DIALOG */}
       <ConfirmDialog
         isOpen={!!confirmRollbackLog}
         onClose={() => setConfirmRollbackLog(null)}
         onConfirm={handleExecuteRollback}
-        title="Execute Database Rollback"
+        title="Execute Database Rollback (Undo)"
         message={
           confirmRollbackLog
             ? `Are you sure you want to revert '${confirmRollbackLog.action}' on ${confirmRollbackLog.entityType} (ID: ${confirmRollbackLog.entityId})? The previous data snapshot will be restored into the active collection.`
             : ''
         }
-        confirmText="Confirm & Rollback"
+        confirmText="Confirm & Undo"
         cancelText="Cancel"
         variant="warning"
+        loading={!!processingId}
+      />
+
+      {/* CONFIRM REDO DIALOG */}
+      <ConfirmDialog
+        isOpen={!!confirmRedoLog}
+        onClose={() => setConfirmRedoLog(null)}
+        onConfirm={handleExecuteRedo}
+        title="Execute Database Redo (Re-apply State)"
+        message={
+          confirmRedoLog
+            ? `Are you sure you want to re-apply the forward state for ${confirmRedoLog.entityType} (ID: ${confirmRedoLog.entityId})? This will reverse the previous Undo action.`
+            : ''
+        }
+        confirmText="Confirm & Redo"
+        cancelText="Cancel"
+        variant="primary"
         loading={!!processingId}
       />
     </div>
   );
 }
+

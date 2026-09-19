@@ -58,7 +58,7 @@ const runAllTests = async () => {
     const icon = testResult.passed ? '✓ PASS' : '✗ FAIL';
     console.log(`[${icon}] [${suite}] ${testName}`);
     if (!testResult.passed) {
-      console.error('   Failure Details:', details);
+      console.error('   Failure Details:', JSON.stringify(details));
     }
   };
 
@@ -141,12 +141,21 @@ const runAllTests = async () => {
     assert('Global Search', 'Cross-entity omni-search returns 200 OK', globalSearch.status === 200);
     assert('Global Search', 'Omni-search results grouped by entity', globalSearch.data?.data?.totalCount !== undefined && Array.isArray(globalSearch.data?.data?.firs));
 
-    // 10. Reports & Data Export Subsystem
+    // 10. Reports & Data Export Subsystem (PDF, Excel, CSV, KPIs, RBAC)
     const firExport = await request('/api/reports/firs/export?format=csv', 'GET', null, adminToken);
-    assert('Reports', 'FIR CSV export returns 200 OK and text/csv', firExport.status === 200 && firExport.headers['content-type']?.includes('text/csv'));
+    assert('Reports', 'FIR CSV export returns 200 OK and text/csv', firExport.status === 200 && firExport.headers['content-type']?.includes('text/csv'), { status: firExport.status, headers: firExport.headers, data: firExport.data });
 
-    const caseExport = await request('/api/reports/cases/export?format=csv', 'GET', null, adminToken);
-    assert('Reports', 'Case CSV export returns 200 OK', caseExport.status === 200);
+    const firPdfExport = await request('/api/reports/firs/export?format=pdf', 'GET', null, adminToken);
+    assert('Reports', 'FIR PDF export returns 200 OK and application/pdf', firPdfExport.status === 200 && firPdfExport.headers['content-type']?.includes('application/pdf'), { status: firPdfExport.status, headers: firPdfExport.headers, data: firPdfExport.data });
+
+    const caseExcelExport = await request('/api/reports/cases/export?format=excel', 'GET', null, adminToken);
+    assert('Reports', 'Case Excel export returns 200 OK and valid spreadsheet mime', caseExcelExport.status === 200 && caseExcelExport.headers['content-type']?.includes('spreadsheetml'), { status: caseExcelExport.status, headers: caseExcelExport.headers, data: caseExcelExport.data });
+
+    const criminalPdfExport = await request('/api/reports/criminals/export?format=pdf', 'GET', null, adminToken);
+    assert('Reports', 'Criminal Master Registry PDF export returns 200 OK', criminalPdfExport.status === 200 && criminalPdfExport.headers['content-type']?.includes('application/pdf'), { status: criminalPdfExport.status, headers: criminalPdfExport.headers, data: criminalPdfExport.data });
+
+    const unauthExport = await request('/api/reports/firs/export?format=pdf', 'GET', null, null);
+    assert('Reports', 'Unauthorized report export blocked (401 Unauthorized)', unauthExport.status === 401, { status: unauthExport.status });
 
     const reportSummary = await request('/api/reports/summary', 'GET', null, adminToken);
     assert('Reports', 'Report summary KPIs returned (200 OK)', reportSummary.status === 200);
@@ -162,12 +171,37 @@ const runAllTests = async () => {
     const auditBlock = await request('/api/audit-logs', 'GET', null, officerToken);
     assert('Audit Logs', 'Officer blocked from global audit trail (403 Forbidden)', auditBlock.status === 403);
 
-    // 12. Undo & Audit Recovery Subsystem
+    // 12. Undo & Audit Recovery Subsystem (Undo, Redo, Stale Validation & RBAC)
     const recoveryHistory = await request('/api/recovery/history', 'GET', null, adminToken);
     assert('Recovery', 'Admin can view rollback history (200 OK)', recoveryHistory.status === 200);
 
     const recoveryBlock = await request('/api/recovery/history', 'GET', null, officerToken);
     assert('Recovery', 'Officer blocked from recovery console (403 Forbidden)', recoveryBlock.status === 403);
+
+    // Find reversible mutation log for Undo & Redo lifecycle validation
+    const targetAudit = auditLogs.data?.data?.items?.find(
+      (item) => item.entityId && item.oldValues && Object.keys(item.oldValues).length > 0 && item.action !== 'UNDO_MUTATION' && item.action !== 'REDO_MUTATION'
+    );
+
+    if (targetAudit) {
+      // 12a. Undo Execution
+      const undoRes = await request(`/api/recovery/${targetAudit._id}/undo`, 'POST', null, adminToken);
+      assert('Recovery', 'Undo rollback restores entity snapshot (200 OK)', undoRes.status === 200, { status: undoRes.status, data: undoRes.data });
+
+      // 12b. Unauthorized Redo Attempt by Officer
+      const officerRedo = await request(`/api/recovery/${targetAudit._id}/redo`, 'POST', null, officerToken);
+      assert('Recovery', 'Officer blocked from redoing mutations (403 Forbidden)', officerRedo.status === 403, { status: officerRedo.status });
+
+      // 12c. Redo Execution by Admin
+      const redoRes = await request(`/api/recovery/${targetAudit._id}/redo`, 'POST', null, adminToken);
+      assert('Recovery', 'Redo re-applies mutated entity state (200 OK)', redoRes.status === 200, { status: redoRes.status, data: redoRes.data });
+
+      // 12d. Stale / Duplicate Redo Prevention
+      const staleRedo = await request(`/api/recovery/${targetAudit._id}/redo`, 'POST', null, adminToken);
+      assert('Recovery', 'Stale/Duplicate redo operation rejected (400 Bad Request)', staleRedo.status === 400, { status: staleRedo.status, data: staleRedo.data });
+    } else {
+      assert('Recovery', 'Undo rollback target found', false, { reason: 'No reversible audit log found' });
+    }
 
     // 13. Feedback Subsystem
     const feedbackList = await request('/api/feedback', 'GET', null, adminToken);

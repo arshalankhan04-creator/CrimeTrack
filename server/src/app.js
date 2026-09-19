@@ -14,6 +14,7 @@ const searchRoutes = require('./routes/searchRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const recoveryRoutes = require('./routes/recoveryRoutes');
+const actionRoutes = require('./routes/actionRoutes');
 const feedbackRoutes = require('./routes/feedbackRoutes');
 const testRoutes = require('./routes/testRoutes');
 const { notFoundHandler, errorHandler } = require('./middleware/errorMiddleware');
@@ -44,6 +45,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/audit-logs', auditRoutes);
 app.use('/api/recovery', recoveryRoutes);
+app.use('/api/actions', actionRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/tests', testRoutes);
 

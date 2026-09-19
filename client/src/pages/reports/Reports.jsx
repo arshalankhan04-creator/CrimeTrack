@@ -15,7 +15,9 @@ import {
   Shield,
   Clock,
   UserCheck,
-  CheckCircle2
+  CheckCircle2,
+  Users,
+  Eye
 } from 'lucide-react';
 import reportService from '../../services/reportService';
 import { useAuth } from '../../context/AuthContext';
@@ -33,6 +35,7 @@ const REPORT_TYPES = [
   { id: 'firs', label: 'FIR Complaints Ledger', icon: FileText, desc: 'Detailed log of citizen complaints, crime types, and assigned officers.' },
   { id: 'cases', label: 'Case Clearance Dossier', icon: Briefcase, desc: 'Lifecycle investigation status, priorities, linked FIRs, and resolution dates.' },
   { id: 'crimes', label: 'Crime Incidents Report', icon: Crosshair, desc: 'Category breakdown, severity levels, incident locations, and forensics.' },
+  { id: 'criminals', label: 'Criminal Master Registry', icon: Users, desc: 'Registered offender identities, known aliases, physical marks, and linked case counts.' },
 ];
 
 const CRIME_TYPES = ['THEFT', 'BURGLARY', 'ROBBERY', 'CYBERCRIME', 'ASSAULT', 'MURDER', 'FRAUD', 'EXTORTION', 'OTHER'];
@@ -55,7 +58,7 @@ export default function Reports() {
   const [reportData, setReportData] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  const [exportingType, setExportingType] = useState(null); // 'pdf' | 'excel' | 'csv' | null
 
   const fetchReport = async () => {
     setLoading(true);
@@ -92,29 +95,54 @@ export default function Reports() {
     fetchReport();
   };
 
-  const handleDownloadCSV = async () => {
-    setExporting(true);
+  const getFilterParams = () => ({
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    crimeType: crimeType || undefined,
+    status: status || undefined,
+    priority: priority || undefined,
+  });
+
+  const handleDownloadPDF = async () => {
+    setExportingType('pdf');
     try {
-      const params = {
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
-        crimeType: crimeType || undefined,
-        status: status || undefined,
-        priority: priority || undefined,
-      };
-      await reportService.downloadCSV(selectedReportType, params);
+      await reportService.downloadPDF(selectedReportType, getFilterParams());
+      toast.success('Native PDF Report exported successfully.');
+    } catch (err) {
+      toast.error(err.message || 'Failed to download PDF report.');
+    } finally {
+      setExportingType(null);
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    setExportingType('excel');
+    try {
+      await reportService.downloadExcel(selectedReportType, getFilterParams());
+      toast.success('Excel (.xlsx) Report exported successfully.');
+    } catch (err) {
+      toast.error(err.message || 'Failed to download Excel report.');
+    } finally {
+      setExportingType(null);
+    }
+  };
+
+  const handleDownloadCSV = async () => {
+    setExportingType('csv');
+    try {
+      await reportService.downloadCSV(selectedReportType, getFilterParams());
       toast.success('CSV Report exported successfully.');
     } catch (err) {
       toast.error(err.message || 'Failed to download CSV report.');
     } finally {
-      setExporting(false);
+      setExportingType(null);
     }
   };
 
   const handleDownloadJSON = () => {
     try {
       reportService.downloadJSON(selectedReportType, reportData);
-      toast.success('JSON Report downloaded successfully.');
+      toast.success('JSON dataset downloaded successfully.');
     } catch (err) {
       toast.error('Failed to export JSON.');
     }
@@ -130,29 +158,50 @@ export default function Reports() {
       <div className="print:hidden">
         <PageHeader
           title="Reports & Intelligence Export"
-          subtitle="Generate official department datasets, export structured CSV/Excel ledgers, and print compliance dossiers."
+          subtitle="Generate official department datasets, export structured PDF/Excel/CSV ledgers, and print compliance dossiers."
           badge="DATA EXPORT CENTER"
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                icon={Eye}
+                loading={loading}
+                onClick={fetchReport}
+              >
+                Preview
+              </Button>
+
+              <Button
+                variant="primary"
+                size="sm"
+                icon={FileText}
+                loading={exportingType === 'pdf'}
+                onClick={handleDownloadPDF}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Export PDF
+              </Button>
+
               <Button
                 variant="primary"
                 size="sm"
                 icon={FileSpreadsheet}
-                loading={exporting}
-                onClick={handleDownloadCSV}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                loading={exportingType === 'excel'}
+                onClick={handleDownloadExcel}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
               >
-                Export CSV
+                Export Excel
               </Button>
 
               <Button
                 variant="outline"
                 size="sm"
-                icon={FileCode}
-                disabled={loading || reportData.length === 0}
-                onClick={handleDownloadJSON}
+                icon={Download}
+                loading={exportingType === 'csv'}
+                onClick={handleDownloadCSV}
               >
-                JSON
+                Export CSV
               </Button>
 
               <Button
@@ -161,7 +210,7 @@ export default function Reports() {
                 icon={Printer}
                 onClick={handlePrint}
               >
-                Print Sheet
+                Print
               </Button>
             </div>
           }
@@ -169,7 +218,7 @@ export default function Reports() {
       </div>
 
       {/* Report Type Selector Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 print:hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:hidden">
         {REPORT_TYPES.map((rt) => {
           const Icon = rt.icon;
           const isSelected = selectedReportType === rt.id;
@@ -229,7 +278,7 @@ export default function Reports() {
             />
           </div>
 
-          {selectedReportType === 'firs' && (
+          {(selectedReportType === 'firs' || selectedReportType === 'crimes') && (
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Crime Category</label>
               <select
@@ -381,7 +430,7 @@ export default function Reports() {
                       <td className="text-slate-500 font-mono text-xs">
                         {new Date(f.incidentDate).toLocaleDateString()}
                       </td>
-                      <td className="text-slate-600 text-xs">{f.incidentLocation || 'N/A'}</td>
+                      <td className="text-slate-600 text-xs">{f.incidentPlace || 'N/A'}</td>
                       <td className="text-slate-700 text-xs font-medium">
                         {f.assignedOfficerId?.name || 'Unassigned'}
                       </td>
@@ -443,7 +492,7 @@ export default function Reports() {
                 <tbody>
                   {reportData.map((cr) => (
                     <tr key={cr._id}>
-                      <td className="font-bold text-navy-950 text-xs">{cr.category}</td>
+                      <td className="font-bold text-navy-950 text-xs">{cr.crimeType}</td>
                       <td>
                         <Badge variant={cr.severity === 'HIGH' || cr.severity === 'CRITICAL' ? 'danger' : 'warning'}>
                           {cr.severity}
@@ -451,11 +500,41 @@ export default function Reports() {
                       </td>
                       <td className="text-slate-700 text-xs">{cr.location}</td>
                       <td className="text-slate-500 font-mono text-xs">
-                        {new Date(cr.dateTime).toLocaleDateString()}
+                        {new Date(cr.crimeDate).toLocaleDateString()}
                       </td>
                       <td className="font-mono text-slate-700 text-xs">{cr.caseId?.caseNumber || 'N/A'}</td>
                       <td className="text-slate-800 text-xs font-medium">
                         {cr.caseId?.assignedOfficerId?.name || 'Unassigned'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {/* Criminal Table */}
+            {selectedReportType === 'criminals' && (
+              <table className="app-table">
+                <thead>
+                  <tr>
+                    <th>Full Name</th>
+                    <th>Aliases</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Physical Marks</th>
+                    <th>Associated Cases</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.map((crm) => (
+                    <tr key={crm._id}>
+                      <td className="font-bold text-navy-950 text-xs">{crm.name}</td>
+                      <td className="text-slate-600 text-xs">{crm.aliases && crm.aliases.length > 0 ? crm.aliases.join(', ') : 'None'}</td>
+                      <td className="font-mono text-slate-700 text-xs">{crm.age ?? 'N/A'}</td>
+                      <td className="text-slate-700 text-xs">{crm.gender || 'N/A'}</td>
+                      <td className="text-slate-600 text-xs">{crm.identifyingMarks || 'None'}</td>
+                      <td className="font-mono font-bold text-brand-blue text-xs">
+                        {crm.associatedCaseIds ? crm.associatedCaseIds.length : 0} Cases
                       </td>
                     </tr>
                   ))}
@@ -468,4 +547,5 @@ export default function Reports() {
     </div>
   );
 }
+
 

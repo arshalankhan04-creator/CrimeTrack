@@ -5,10 +5,18 @@ import api from './api';
  */
 export const recoveryService = {
   /**
-   * Revert a mutation using its audit log ID
+   * Revert a mutation using its audit log ID (Undo)
    */
   undoMutation: async (auditLogId) => {
-    const response = await api.post(`/audit-logs/${auditLogId}/undo`);
+    const response = await api.post(`/recovery/${auditLogId}/undo`);
+    return response;
+  },
+
+  /**
+   * Re-apply a reverted mutation or forward snapshot using its audit log ID (Redo)
+   */
+  redoMutation: async (auditLogId) => {
+    const response = await api.post(`/recovery/${auditLogId}/redo`);
     return response;
   },
 

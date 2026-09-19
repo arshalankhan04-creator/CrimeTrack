@@ -490,8 +490,10 @@ const seedModerateData = async () => {
       },
     ];
 
+    const seededFeedbacks = [];
     for (const fb of feedbacksData) {
-      await Feedback.create(fb);
+      const doc = await Feedback.create(fb);
+      seededFeedbacks.push(doc);
     }
 
     // 8. Seed Audit Trail Logs with Rich Diff Snapshots (For Audit & Undo Verification)
@@ -574,7 +576,7 @@ const seedModerateData = async () => {
         role: 'ADMIN',
         action: 'TRIAGE_FEEDBACK',
         entityType: 'Feedback',
-        entityId: feedbacksData[0]._id,
+        entityId: seededFeedbacks[0]._id,
         oldValues: { status: 'PENDING', priority: 'MEDIUM' },
         newValues: { status: 'RESOLVED', priority: 'HIGH' },
         metadata: { triagedBy: 'Chief Commissioner Alok Deshmukh' },

@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const {
   revertAuditAction,
   redoAuditAction,
@@ -11,9 +11,7 @@ const router = express.Router();
 router.use(authenticate);
 router.use(authorize('ADMIN'));
 
-router.get('/history', getRecoveryHistory);
-router.post('/rollback/:id', revertAuditAction);
-router.post('/redo/:id', redoAuditAction);
+router.get('/recent', getRecoveryHistory);
 router.post('/:id/undo', revertAuditAction);
 router.post('/:id/redo', redoAuditAction);
 

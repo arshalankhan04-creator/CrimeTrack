@@ -5,7 +5,7 @@ const {
   getAuditStats,
   exportAuditLogs,
 } = require('../controllers/auditController');
-const { revertAuditAction } = require('../controllers/recoveryController');
+const { revertAuditAction, redoAuditAction } = require('../controllers/recoveryController');
 const { authenticate, authorize } = require('../middleware/authMiddleware');
 
 const router = express.Router();
@@ -24,5 +24,6 @@ router.route('/:id')
   .get(getAuditLogById);
 
 router.post('/:id/undo', revertAuditAction);
+router.post('/:id/redo', redoAuditAction);
 
 module.exports = router;

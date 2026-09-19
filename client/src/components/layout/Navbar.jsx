@@ -19,7 +19,7 @@ import {
   CheckCircle2,
   Inbox
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import Badge from '../common/Badge';
@@ -36,6 +36,7 @@ export default function Navbar({ onToggleMobileMenu, onOpenProfile }) {
   } = useNotifications();
   
   const navigate = useNavigate();
+  const location = useLocation();
   const [quickQuery, setQuickQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -103,12 +104,33 @@ export default function Navbar({ onToggleMobileMenu, onOpenProfile }) {
     return '/';
   };
 
+  const getPageTitle = (pathname) => {
+    if (pathname === '/' || pathname === '/health') return 'Station Overview';
+    if (pathname === '/admin/dashboard') return 'Command Dashboard';
+    if (pathname === '/officer/dashboard') return 'Officer Workspace';
+    if (pathname === '/viewer/dashboard') return 'Viewer Portal';
+    if (pathname.startsWith('/firs')) return 'FIR Management';
+    if (pathname.startsWith('/cases')) return 'Case Registry';
+    if (pathname.startsWith('/criminals')) return 'Criminal Registry';
+    if (pathname.startsWith('/investigations')) return 'Investigation Diary';
+    if (pathname.startsWith('/search')) return 'Global Search';
+    if (pathname.startsWith('/reports')) return 'Reports & Exports';
+    if (pathname.startsWith('/users')) return 'User Management';
+    if (pathname.startsWith('/logs')) return 'Audit Trails';
+    if (pathname.startsWith('/recovery')) return 'Disaster Recovery';
+    if (pathname.startsWith('/feedback')) return 'Feedback & Support';
+    if (pathname.startsWith('/qa')) return 'System Diagnostics';
+    return '';
+  };
+
+  const pageTitle = getPageTitle(location.pathname);
+
   return (
     <header className="bg-navy-900 text-white border-b border-navy-800 sticky top-0 z-30 shadow-sm font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-3">
           
-          {/* Left: Mobile Toggle & Brand Emblem */}
+          {/* Left: Mobile Toggle, CrimeTrack Shield Branding & Page Breadcrumb */}
           <div className="flex items-center gap-3 shrink-0">
             {isAuthenticated && (
               <button
@@ -121,29 +143,34 @@ export default function Navbar({ onToggleMobileMenu, onOpenProfile }) {
               </button>
             )}
 
-            <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-blue to-blue-700 flex items-center justify-center text-white shadow-md shadow-blue-950/40 group-hover:scale-105 transition-transform">
-                <Shield className="w-4.5 h-4.5 text-white" />
+            <Link to="/" className="flex items-center gap-2.5 group focus:outline-none">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-blue to-blue-700 flex items-center justify-center text-white shadow-md shadow-blue-950/40 group-hover:scale-105 transition-transform shrink-0">
+                <Shield className="w-5 h-5 text-white" />
               </div>
-              <div className="hidden xs:block">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-extrabold text-sm sm:text-base tracking-tight text-white group-hover:text-blue-200 transition">
-                    CrimeTrack
-                  </span>
-                  <span className="text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.2 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                    PORTAL
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 font-medium tracking-wide">
-                  Central Law Enforcement Platform
-                </p>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-base tracking-tight text-white group-hover:text-blue-200 transition select-none">
+                  CrimeTrack
+                </span>
+                <span className="hidden sm:inline-block text-[9px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 select-none">
+                  PORTAL
+                </span>
               </div>
             </Link>
+
+            {/* Page Title Breadcrumb on Desktop */}
+            {pageTitle && (
+              <div className="hidden lg:flex items-center gap-2 pl-2.5 border-l border-navy-800 text-xs">
+                <span className="text-slate-500">/</span>
+                <span className="font-semibold text-slate-300 tracking-wide select-none">
+                  {pageTitle}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Center: Quick Search Bar (For Authenticated Users) */}
           {isAuthenticated ? (
-            <form onSubmit={handleQuickSearch} className="hidden md:flex items-center flex-1 max-w-md mx-2">
+            <form onSubmit={handleQuickSearch} className="hidden md:flex items-center flex-1 max-w-md mx-3 lg:mx-6">
               <div className="relative w-full">
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
