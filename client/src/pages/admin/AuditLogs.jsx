@@ -205,7 +205,7 @@ export default function AuditLogs() {
 
       {/* Audit KPI Cards */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <StatCard
             title="Total Audit Events"
             value={stats.totalCount || 0}
@@ -233,7 +233,7 @@ export default function AuditLogs() {
                     .replace(/_/g, ' ')
                     .toLowerCase()
                     .replace(/\b\w/g, (c) => c.toUpperCase())
-                : 'N/A'
+                : 'None Logged'
             }
             subtitle={`${stats.topActions?.[0]?.count || 0} Events Recorded`}
             icon={Layers}
@@ -244,7 +244,7 @@ export default function AuditLogs() {
 
       {/* Filter Toolbar */}
       <div className="card-surface p-5">
-        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 text-xs">
+        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5 text-xs">
           <div>
             <label className="block font-semibold text-slate-700 mb-1">Search Keywords</label>
             <div className="relative">

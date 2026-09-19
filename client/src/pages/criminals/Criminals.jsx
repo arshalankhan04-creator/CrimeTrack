@@ -402,12 +402,12 @@ export default function Criminals() {
               <table className="app-table w-full">
                 <thead>
                   <tr>
-                    <th className="w-[22%] min-w-[200px]">Criminal Identity</th>
-                    <th className="w-[12%] min-w-[110px]">Demographics</th>
-                    <th className="w-[27%] min-w-[220px]">Physical Marks / Tattoos</th>
-                    <th className="w-[15%] min-w-[130px]">Associated Cases</th>
-                    <th className="w-[24%] min-w-[200px]">Last Known Location</th>
-                    <th className="text-right shrink-0">Actions</th>
+                    <th className="min-w-[220px]">Criminal Identity</th>
+                    <th className="min-w-[120px]">Demographics</th>
+                    <th className="min-w-[240px]">Physical Marks / Tattoos</th>
+                    <th className="min-w-[150px]">Associated Cases</th>
+                    <th className="min-w-[220px]">Last Known Location</th>
+                    <th className="text-right shrink-0 min-w-[120px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>

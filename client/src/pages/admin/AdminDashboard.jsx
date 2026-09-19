@@ -74,7 +74,7 @@ export default function AdminDashboard() {
       />
 
       {/* Top Level KPI Stat Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-4">
         <StatCard
           title="Total FIRs"
           value={stats?.totalFIRs}
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
         <h3 className="font-bold text-xs text-slate-500 uppercase tracking-wider px-1">
           Operational Subsystems
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <Link to="/users" className="card-surface p-5 hover:border-brand-blue/60 hover:shadow-card transition group flex flex-col justify-between h-full min-w-0">
             <div>
               <div className="flex items-center justify-between">

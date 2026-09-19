@@ -240,7 +240,7 @@ export default function Feedback() {
 
       {/* KPI Overview Cards */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <StatCard
             title="Total Submissions"
             value={stats.totalCount}
@@ -273,8 +273,8 @@ export default function Feedback() {
       )}
 
       {/* Filter Toolbar */}
-      <div className="card-surface p-4">
-        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+      <div className="card-surface p-5">
+        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3.5">
           <FormField label="Search Keywords">
             <Input
               placeholder="Search subject or notes..."

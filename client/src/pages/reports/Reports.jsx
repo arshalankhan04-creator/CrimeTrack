@@ -218,7 +218,7 @@ export default function Reports() {
       </div>
 
       {/* Report Type Selector Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 print:hidden">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 print:hidden">
         {REPORT_TYPES.map((rt) => {
           const Icon = rt.icon;
           const isSelected = selectedReportType === rt.id;
@@ -257,7 +257,7 @@ export default function Reports() {
           </span>
         </div>
 
-        <form onSubmit={handleApplyFilters} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 text-xs">
+        <form onSubmit={handleApplyFilters} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 text-xs">
           <div>
             <label className="block font-semibold text-slate-700 mb-1.5">From Date</label>
             <input
@@ -343,7 +343,7 @@ export default function Reports() {
 
       {/* Summary KPI Banner */}
       {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 print:grid-cols-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 print:grid-cols-4">
           <StatCard
             title="Total FIRs"
             value={summary.totalFIRs || 0}
