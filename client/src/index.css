@@ -4,27 +4,68 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900;
+    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+  }
+
+  /* Custom subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #F1F5F9;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
   }
 }
 
 /* Custom design system utility styles */
 .card-surface {
-  @apply bg-white border border-slate-200 rounded-lg shadow-sm;
+  @apply bg-white border border-slate-200/80 rounded-xl shadow-card transition-shadow duration-200;
 }
 
-.badge-success {
-  @apply bg-semantic-successBg text-semantic-success border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1;
+.card-surface:hover {
+  @apply shadow-card-hover;
 }
 
-.badge-warning {
-  @apply bg-semantic-warningBg text-semantic-warning border border-amber-200 px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1;
+.card-header {
+  @apply px-5 py-4 border-b border-slate-100 flex items-center justify-between;
 }
 
-.badge-danger {
-  @apply bg-semantic-dangerBg text-semantic-danger border border-red-200 px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1;
+/* Standardized Table Styles */
+.app-table {
+  @apply w-full text-left text-xs border-collapse;
 }
 
-.badge-info {
-  @apply bg-brand-lightBlue text-brand-blue border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-medium inline-flex items-center gap-1;
+.app-table th {
+  @apply px-4 py-3 bg-slate-50/90 text-slate-600 uppercase tracking-wider font-semibold text-[11px] border-b border-slate-200 select-none;
+}
+
+.app-table td {
+  @apply px-4 py-3.5 border-b border-slate-100 text-slate-800 transition-colors;
+}
+
+.app-table tr:hover td {
+  @apply bg-slate-50/60;
+}
+
+/* Standardized Form Input Focus */
+.input-base {
+  @apply w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition font-sans;
+}
+
+/* Print Specific Utility */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
 }

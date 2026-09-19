@@ -5,8 +5,6 @@ import {
   Printer, 
   Calendar, 
   Filter, 
-  CheckCircle2, 
-  AlertCircle, 
   Briefcase, 
   Crosshair, 
   BarChart3, 
@@ -16,10 +14,20 @@ import {
   FileCode,
   Shield,
   Clock,
-  UserCheck
+  UserCheck,
+  CheckCircle2
 } from 'lucide-react';
 import reportService from '../../services/reportService';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+
+// Common UI Components
+import PageHeader from '../../components/common/PageHeader';
+import Button from '../../components/common/Button';
+import Badge from '../../components/common/Badge';
+import StatCard from '../../components/common/StatCard';
+import { TableSkeleton } from '../../components/common/Skeletons';
+import EmptyState from '../../components/common/EmptyState';
 
 const REPORT_TYPES = [
   { id: 'firs', label: 'FIR Complaints Ledger', icon: FileText, desc: 'Detailed log of citizen complaints, crime types, and assigned officers.' },
@@ -33,6 +41,7 @@ const PRIORITIES = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
 export default function Reports() {
   const { user } = useAuth();
+  const toast = useToast();
   const [selectedReportType, setSelectedReportType] = useState('firs');
   
   // Filters
@@ -47,12 +56,9 @@ export default function Reports() {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [error, setError] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
 
   const fetchReport = async () => {
     setLoading(true);
-    setError(null);
     try {
       const params = {
         dateFrom: dateFrom || undefined,
@@ -71,7 +77,7 @@ export default function Reports() {
       setSummary(summaryRes.data.summary || null);
     } catch (err) {
       console.error('Failed to load report data:', err);
-      setError(err.message || 'Error generating report preview.');
+      toast.error(err.message || 'Error generating report preview.');
     } finally {
       setLoading(false);
     }
@@ -88,7 +94,6 @@ export default function Reports() {
 
   const handleDownloadCSV = async () => {
     setExporting(true);
-    setError(null);
     try {
       const params = {
         dateFrom: dateFrom || undefined,
@@ -98,9 +103,9 @@ export default function Reports() {
         priority: priority || undefined,
       };
       await reportService.downloadCSV(selectedReportType, params);
-      setSuccessMsg('CSV Report downloaded successfully.');
+      toast.success('CSV Report exported successfully.');
     } catch (err) {
-      setError(err.message || 'Failed to download CSV report.');
+      toast.error(err.message || 'Failed to download CSV report.');
     } finally {
       setExporting(false);
     }
@@ -109,9 +114,9 @@ export default function Reports() {
   const handleDownloadJSON = () => {
     try {
       reportService.downloadJSON(selectedReportType, reportData);
-      setSuccessMsg('JSON Report downloaded successfully.');
+      toast.success('JSON Report downloaded successfully.');
     } catch (err) {
-      setError('Failed to export JSON.');
+      toast.error('Failed to export JSON.');
     }
   };
 
@@ -120,75 +125,48 @@ export default function Reports() {
   };
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="badge-info font-bold">RECORDS & ANALYTICS</span>
-            <span className="text-xs text-slate-500 font-mono">Official Police Archive & Export</span>
-          </div>
-          <h1 className="text-2xl font-bold text-navy-900 mt-2 tracking-tight">
-            Reports & Data Export Center
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Generate official department datasets, export formatted CSV/Excel ledgers, and print official police dossiers.
-          </p>
-        </div>
+      <div className="print:hidden">
+        <PageHeader
+          title="Reports & Intelligence Export"
+          subtitle="Generate official department datasets, export structured CSV/Excel ledgers, and print compliance dossiers."
+          badge="DATA EXPORT CENTER"
+          actions={
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                icon={FileSpreadsheet}
+                loading={exporting}
+                onClick={handleDownloadCSV}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                Export CSV
+              </Button>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={handleDownloadCSV}
-            disabled={exporting || loading}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg text-xs shadow transition disabled:opacity-50"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>{exporting ? 'Generating...' : 'Export CSV'}</span>
-          </button>
+              <Button
+                variant="outline"
+                size="sm"
+                icon={FileCode}
+                disabled={loading || reportData.length === 0}
+                onClick={handleDownloadJSON}
+              >
+                JSON
+              </Button>
 
-          <button
-            onClick={handleDownloadJSON}
-            disabled={loading || reportData.length === 0}
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs border border-slate-300 transition disabled:opacity-50"
-          >
-            <FileCode className="w-4 h-4 text-purple-600" />
-            <span>JSON</span>
-          </button>
-
-          <button
-            onClick={handlePrint}
-            className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-navy-900 hover:bg-navy-800 text-white font-semibold rounded-lg text-xs shadow transition"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print Sheet</span>
-          </button>
-        </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={Printer}
+                onClick={handlePrint}
+              >
+                Print Sheet
+              </Button>
+            </div>
+          }
+        />
       </div>
-
-      {/* Notifications */}
-      {successMsg && (
-        <div className="p-4 bg-semantic-successBg border border-emerald-200 rounded-lg flex items-center justify-between text-emerald-800 text-xs print:hidden">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-          <button onClick={() => setSuccessMsg(null)} className="text-emerald-600 hover:text-emerald-900 font-bold">
-            ✕
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 bg-semantic-dangerBg border border-red-200 rounded-lg flex items-center justify-between text-red-800 text-xs print:hidden">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-            <span>{error}</span>
-          </div>
-          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-900 font-bold">
-            ✕
-          </button>
-        </div>
-      )}
 
       {/* Report Type Selector Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 print:hidden">
@@ -201,18 +179,18 @@ export default function Reports() {
               onClick={() => setSelectedReportType(rt.id)}
               className={`p-4 rounded-xl border text-left transition ${
                 isSelected
-                  ? 'bg-blue-50/80 border-brand-blue ring-1 ring-brand-blue shadow-sm'
+                  ? 'bg-navy-50/70 border-brand-blue ring-1 ring-brand-blue shadow-sm'
                   : 'card-surface hover:border-slate-300'
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className={`p-2 rounded-lg ${isSelected ? 'bg-brand-blue text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <div className={`p-2.5 rounded-xl ${isSelected ? 'bg-brand-blue text-white shadow-sm' : 'bg-slate-100 text-slate-600'}`}>
                   <Icon className="w-5 h-5" />
                 </div>
-                {isSelected && <span className="badge-info font-bold text-[10px]">Selected</span>}
+                {isSelected && <Badge variant="info">Selected</Badge>}
               </div>
-              <h3 className="font-bold text-sm text-navy-900 mt-3">{rt.label}</h3>
-              <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{rt.desc}</p>
+              <h3 className="font-bold text-sm text-navy-950 mt-3">{rt.label}</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{rt.desc}</p>
             </button>
           );
         })}
@@ -221,49 +199,47 @@ export default function Reports() {
       {/* Filter Parameters Form */}
       <div className="card-surface p-5 space-y-4 print:hidden">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <h3 className="font-bold text-xs uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
             <Filter className="w-3.5 h-3.5 text-brand-blue" />
-            Report Parameters & Range Filters
+            Report Parameters & Scope Filters
           </h3>
           <span className="text-xs text-slate-400 font-mono">
-            Filtered Scope: {user?.role}
+            Scope: {user?.role}
           </span>
         </div>
 
         <form onSubmit={handleApplyFilters} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
           <div>
-            <label className="block font-semibold text-slate-600 mb-1">From Date</label>
+            <label className="block font-semibold text-slate-700 mb-1">From Date</label>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue"
+              className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-xs"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-600 mb-1">To Date</label>
+            <label className="block font-semibold text-slate-700 mb-1">To Date</label>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue"
+              className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-xs"
             />
           </div>
 
           {selectedReportType === 'firs' && (
             <div>
-              <label className="block font-semibold text-slate-600 mb-1">Crime Category</label>
+              <label className="block font-semibold text-slate-700 mb-1">Crime Category</label>
               <select
                 value={crimeType}
                 onChange={(e) => setCrimeType(e.target.value)}
-                className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white"
+                className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 text-xs font-medium"
               >
                 <option value="">All Categories</option>
                 {CRIME_TYPES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
+                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
@@ -271,17 +247,15 @@ export default function Reports() {
 
           {selectedReportType === 'cases' && (
             <div>
-              <label className="block font-semibold text-slate-600 mb-1">Case Status</label>
+              <label className="block font-semibold text-slate-700 mb-1">Case Status</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white"
+                className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 text-xs font-medium"
               >
                 <option value="">All Statuses</option>
                 {CASE_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
+                  <option key={s} value={s}>{s}</option>
                 ))}
               </select>
             </div>
@@ -289,54 +263,60 @@ export default function Reports() {
 
           {selectedReportType === 'cases' && (
             <div>
-              <label className="block font-semibold text-slate-600 mb-1">Priority</label>
+              <label className="block font-semibold text-slate-700 mb-1">Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white"
+                className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue/20 text-xs font-medium"
               >
                 <option value="">All Priorities</option>
                 {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
+                  <option key={p} value={p}>{p}</option>
                 ))}
               </select>
             </div>
           )}
 
-          <div className="flex items-end gap-2">
-            <button
+          <div className="flex items-end">
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full py-2 px-4 bg-brand-blue hover:bg-brand-hoverBlue text-white font-semibold rounded-lg text-xs shadow transition flex items-center justify-center gap-1.5"
+              variant="primary"
+              size="md"
+              icon={RefreshCw}
+              loading={loading}
+              className="w-full"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>Update Preview</span>
-            </button>
+              Update Preview
+            </Button>
           </div>
         </form>
       </div>
 
       {/* Summary KPI Banner */}
       {summary && (
-        <div className="card-surface p-5 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center text-xs">
-          <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400">Total Registered FIRs</span>
-            <p className="text-xl font-bold text-navy-900 mt-0.5 font-mono">{summary.totalFIRs}</p>
-          </div>
-          <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400">Total Case Files</span>
-            <p className="text-xl font-bold text-navy-900 mt-0.5 font-mono">{summary.totalCases}</p>
-          </div>
-          <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400">Cases Solved/Closed</span>
-            <p className="text-xl font-bold text-emerald-600 mt-0.5 font-mono">{summary.resolved}</p>
-          </div>
-          <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400">Resolution Clearance</span>
-            <p className="text-xl font-bold text-brand-blue mt-0.5 font-mono">{summary.resolutionRate}%</p>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 print:grid-cols-4">
+          <StatCard
+            title="Total FIRs"
+            value={summary.totalFIRs || 0}
+            icon={FileText}
+          />
+          <StatCard
+            title="Total Case Files"
+            value={summary.totalCases || 0}
+            icon={Briefcase}
+          />
+          <StatCard
+            title="Cases Cleared"
+            value={summary.resolved || 0}
+            icon={CheckCircle2}
+            className="border-emerald-200"
+          />
+          <StatCard
+            title="Clearance Rate"
+            value={`${summary.resolutionRate || 0}%`}
+            icon={BarChart3}
+            trend={{ direction: 'up', label: 'Department avg' }}
+          />
         </div>
       )}
 
@@ -356,51 +336,53 @@ export default function Reports() {
       </div>
 
       {/* Live Data Preview Table */}
-      <div className="card-surface p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-navy-900 flex items-center gap-2">
+      <div className="card-surface overflow-hidden">
+        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <h2 className="text-xs font-bold text-navy-950 uppercase tracking-wider flex items-center gap-2">
             <FileSpreadsheet className="w-4 h-4 text-brand-blue" />
             Dataset Preview ({reportData.length} Records)
           </h2>
-          <span className="text-[11px] text-slate-400 font-mono">
-            Format: {selectedReportType.toUpperCase()} Ledger
+          <span className="text-[11px] text-slate-500 font-mono">
+            {selectedReportType.toUpperCase()} Ledger
           </span>
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-slate-400 text-xs">Loading report dataset...</div>
+          <TableSkeleton rows={6} columns={6} />
         ) : reportData.length === 0 ? (
-          <div className="py-12 text-center text-slate-500 text-xs">
-            No records found for the selected parameters. Adjust your filters or dates.
-          </div>
+          <EmptyState
+            icon={FileSpreadsheet}
+            title="No Data Available"
+            description="No records found matching the specified parameters and date bounds."
+          />
         ) : (
           <div className="overflow-x-auto">
             {/* FIR Table */}
             {selectedReportType === 'firs' && (
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="app-table">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="py-3 px-3">FIR Number</th>
-                    <th className="py-3 px-3">Crime Category</th>
-                    <th className="py-3 px-3">Complainant</th>
-                    <th className="py-3 px-3">Incident Date</th>
-                    <th className="py-3 px-3">Location</th>
-                    <th className="py-3 px-3">Assigned Officer</th>
+                  <tr>
+                    <th>FIR Number</th>
+                    <th>Crime Category</th>
+                    <th>Complainant</th>
+                    <th>Incident Date</th>
+                    <th>Location</th>
+                    <th>Assigned Officer</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody>
                   {reportData.map((f) => (
-                    <tr key={f._id} className="hover:bg-slate-50/50">
-                      <td className="py-3 px-3 font-mono font-bold text-navy-900">{f.firNumber}</td>
-                      <td className="py-3 px-3">
-                        <span className="badge-info font-bold">{f.crimeType}</span>
+                    <tr key={f._id}>
+                      <td className="font-mono font-bold text-navy-950 text-xs">{f.firNumber}</td>
+                      <td>
+                        <Badge variant="crime" crimeType={f.crimeType}>{f.crimeType}</Badge>
                       </td>
-                      <td className="py-3 px-3 font-medium text-slate-800">{f.complainantName}</td>
-                      <td className="py-3 px-3 text-slate-500 font-mono">
+                      <td className="font-medium text-slate-800 text-xs">{f.complainantName}</td>
+                      <td className="text-slate-500 font-mono text-xs">
                         {new Date(f.incidentDate).toLocaleDateString()}
                       </td>
-                      <td className="py-3 px-3 text-slate-600">{f.incidentLocation || 'N/A'}</td>
-                      <td className="py-3 px-3 text-slate-700">
+                      <td className="text-slate-600 text-xs">{f.incidentLocation || 'N/A'}</td>
+                      <td className="text-slate-700 text-xs font-medium">
                         {f.assignedOfficerId?.name || 'Unassigned'}
                       </td>
                     </tr>
@@ -411,32 +393,32 @@ export default function Reports() {
 
             {/* Case Table */}
             {selectedReportType === 'cases' && (
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="app-table">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="py-3 px-3">Case Number</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3">Priority</th>
-                    <th className="py-3 px-3">Linked FIR</th>
-                    <th className="py-3 px-3">Investigating Officer</th>
-                    <th className="py-3 px-3">Opened Date</th>
+                  <tr>
+                    <th>Case Number</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Linked FIR</th>
+                    <th>Investigating Officer</th>
+                    <th>Opened Date</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody>
                   {reportData.map((c) => (
-                    <tr key={c._id} className="hover:bg-slate-50/50">
-                      <td className="py-3 px-3 font-mono font-bold text-navy-900">{c.caseNumber}</td>
-                      <td className="py-3 px-3">
-                        <span className="badge-warning font-bold">{c.status}</span>
+                    <tr key={c._id}>
+                      <td className="font-mono font-bold text-navy-950 text-xs">{c.caseNumber}</td>
+                      <td>
+                        <Badge variant="status" status={c.status}>{c.status}</Badge>
                       </td>
-                      <td className="py-3 px-3">
-                        <span className="badge-danger font-bold">{c.priority}</span>
+                      <td>
+                        <Badge variant="priority" priority={c.priority}>{c.priority}</Badge>
                       </td>
-                      <td className="py-3 px-3 font-mono text-slate-700">{c.firId?.firNumber || 'N/A'}</td>
-                      <td className="py-3 px-3 text-slate-800 font-medium">
+                      <td className="font-mono text-slate-700 text-xs">{c.firId?.firNumber || 'N/A'}</td>
+                      <td className="text-slate-800 font-medium text-xs">
                         {c.assignedOfficerId?.name || 'Unassigned'}
                       </td>
-                      <td className="py-3 px-3 text-slate-500 font-mono">
+                      <td className="text-slate-500 font-mono text-xs">
                         {new Date(c.createdAt).toLocaleDateString()}
                       </td>
                     </tr>
@@ -447,30 +429,32 @@ export default function Reports() {
 
             {/* Crime Table */}
             {selectedReportType === 'crimes' && (
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="app-table">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="py-3 px-3">Category</th>
-                    <th className="py-3 px-3">Severity</th>
-                    <th className="py-3 px-3">Location</th>
-                    <th className="py-3 px-3">Incident Date</th>
-                    <th className="py-3 px-3">Associated Case</th>
-                    <th className="py-3 px-3">Officer</th>
+                  <tr>
+                    <th>Category</th>
+                    <th>Severity</th>
+                    <th>Location</th>
+                    <th>Incident Date</th>
+                    <th>Associated Case</th>
+                    <th>Officer</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody>
                   {reportData.map((cr) => (
-                    <tr key={cr._id} className="hover:bg-slate-50/50">
-                      <td className="py-3 px-3 font-bold text-navy-900">{cr.category}</td>
-                      <td className="py-3 px-3">
-                        <span className="badge-danger font-bold">{cr.severity}</span>
+                    <tr key={cr._id}>
+                      <td className="font-bold text-navy-950 text-xs">{cr.category}</td>
+                      <td>
+                        <Badge variant={cr.severity === 'HIGH' || cr.severity === 'CRITICAL' ? 'danger' : 'warning'}>
+                          {cr.severity}
+                        </Badge>
                       </td>
-                      <td className="py-3 px-3 text-slate-700">{cr.location}</td>
-                      <td className="py-3 px-3 text-slate-500 font-mono">
+                      <td className="text-slate-700 text-xs">{cr.location}</td>
+                      <td className="text-slate-500 font-mono text-xs">
                         {new Date(cr.dateTime).toLocaleDateString()}
                       </td>
-                      <td className="py-3 px-3 font-mono text-slate-700">{cr.caseId?.caseNumber || 'N/A'}</td>
-                      <td className="py-3 px-3 text-slate-800">
+                      <td className="font-mono text-slate-700 text-xs">{cr.caseId?.caseNumber || 'N/A'}</td>
+                      <td className="text-slate-800 text-xs font-medium">
                         {cr.caseId?.assignedOfficerId?.name || 'Unassigned'}
                       </td>
                     </tr>
@@ -484,3 +468,4 @@ export default function Reports() {
     </div>
   );
 }
+

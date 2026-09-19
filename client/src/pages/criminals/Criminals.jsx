@@ -4,9 +4,6 @@ import {
   UserPlus, 
   Search, 
   Filter, 
-  CheckCircle2, 
-  AlertCircle, 
-  X, 
   Edit3, 
   Trash2, 
   Eye, 
@@ -15,33 +12,45 @@ import {
   Shield, 
   Lock, 
   Fingerprint, 
-  FileText, 
   Briefcase,
   AlertTriangle,
-  UserCheck
+  RefreshCw,
+  MapPin,
+  Tag
 } from 'lucide-react';
 import criminalService from '../../services/criminalService';
 import caseService from '../../services/caseService';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+
+// Common UI Components
+import PageHeader from '../../components/common/PageHeader';
+import Button from '../../components/common/Button';
+import Badge from '../../components/common/Badge';
+import Modal from '../../components/common/Modal';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { FormField, Input, Select, Textarea } from '../../components/common/FormControls';
+import { TableSkeleton } from '../../components/common/Skeletons';
+import EmptyState from '../../components/common/EmptyState';
+import Pagination from '../../components/common/Pagination';
 
 const GENDERS = ['MALE', 'FEMALE', 'OTHER'];
 
 export default function Criminals() {
   const { user } = useAuth();
+  const toast = useToast();
   const isReadOnlyViewer = user?.role === 'VIEWER';
   const isAdmin = user?.role === 'ADMIN';
 
   const [criminals, setCriminals] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
 
   // Filters & Search
   const [search, setSearch] = useState('');
   const [genderFilter, setGenderFilter] = useState('');
 
-  // Minimal Search Modal
+  // Minimal Global Search Modal
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [minimalQuery, setMinimalQuery] = useState('');
   const [minimalResults, setMinimalResults] = useState([]);
@@ -53,6 +62,11 @@ export default function Criminals() {
   const [isDossierModalOpen, setIsDossierModalOpen] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [selectedCriminal, setSelectedCriminal] = useState(null);
+
+  // Delete & Unlink Confirm Dialogs
+  const [criminalToDelete, setCriminalToDelete] = useState(null);
+  const [unlinkTarget, setUnlinkTarget] = useState(null); // { criminalId, caseId, caseNumber }
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // Active cases for linking
   const [accessibleCases, setAccessibleCases] = useState([]);
@@ -75,7 +89,6 @@ export default function Criminals() {
   // Fetch Criminals
   const fetchCriminals = async (page = 1) => {
     setLoading(true);
-    setError(null);
     try {
       const params = {
         page,
@@ -88,7 +101,7 @@ export default function Criminals() {
       setPagination(res.data.pagination || { page: 1, limit: 10, total: 0, totalPages: 1 });
     } catch (err) {
       console.error('Failed to fetch criminals:', err);
-      setError(err.message || 'Error loading criminal registry.');
+      toast.error(err.message || 'Error loading criminal registry.');
     } finally {
       setLoading(false);
     }
@@ -99,9 +112,10 @@ export default function Criminals() {
     if (isReadOnlyViewer) return;
     try {
       const res = await caseService.getCases({ limit: 100 });
-      setAccessibleCases(res.data.items || []);
-      if (res.data.items?.length > 0 && !targetCaseId) {
-        setTargetCaseId(res.data.items[0]._id);
+      const items = res.data.items || [];
+      setAccessibleCases(items);
+      if (items.length > 0 && !targetCaseId) {
+        setTargetCaseId(items[0]._id);
       }
     } catch (err) {
       console.warn('Failed to load cases:', err.message);
@@ -118,6 +132,11 @@ export default function Criminals() {
     fetchCriminals(1);
   };
 
+  const handleResetFilters = () => {
+    setSearch('');
+    setGenderFilter('');
+  };
+
   // Minimal Global Search execution
   const handleMinimalSearch = async (e) => {
     e.preventDefault();
@@ -128,6 +147,7 @@ export default function Criminals() {
       setMinimalResults(res.data.criminals || []);
     } catch (err) {
       console.error('Minimal search failed:', err);
+      toast.error('Global search failed: ' + (err.message || 'Server error'));
     } finally {
       setMinimalSearching(false);
     }
@@ -137,10 +157,9 @@ export default function Criminals() {
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
     try {
       const res = await criminalService.createCriminal(formData);
-      setSuccessMsg(`Criminal profile for "${res.data.criminal?.name}" registered successfully.`);
+      toast.success(`Criminal profile for "${res.data.criminal?.name || formData.name}" registered successfully.`);
       setIsCreateModalOpen(false);
       setFormData({
         name: '',
@@ -154,7 +173,7 @@ export default function Criminals() {
       });
       fetchCriminals(1);
     } catch (err) {
-      setError(err.message || 'Failed to register criminal profile.');
+      toast.error(err.message || 'Failed to register criminal profile.');
     } finally {
       setSubmitting(false);
     }
@@ -165,14 +184,13 @@ export default function Criminals() {
     e.preventDefault();
     if (!selectedCriminal) return;
     setSubmitting(true);
-    setError(null);
     try {
       await criminalService.updateCriminal(selectedCriminal._id, formData);
-      setSuccessMsg(`Profile for "${formData.name}" updated successfully.`);
+      toast.success(`Profile for "${formData.name}" updated successfully.`);
       setIsEditModalOpen(false);
       fetchCriminals(pagination.page);
     } catch (err) {
-      setError(err.message || 'Failed to update criminal profile.');
+      toast.error(err.message || 'Failed to update criminal profile.');
     } finally {
       setSubmitting(false);
     }
@@ -183,49 +201,51 @@ export default function Criminals() {
     e.preventDefault();
     if (!selectedCriminal || !targetCaseId) return;
     setSubmitting(true);
-    setError(null);
     try {
       await criminalService.linkCase(selectedCriminal._id, targetCaseId);
-      setSuccessMsg(`Criminal linked to case successfully.`);
+      toast.success(`Criminal linked to case successfully.`);
       setIsLinkModalOpen(false);
       fetchCriminals(pagination.page);
     } catch (err) {
-      setError(err.message || 'Failed to link criminal to case.');
+      toast.error(err.message || 'Failed to link criminal to case.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Handle Unlink from Case
-  const handleUnlink = async (criminalId, caseId) => {
-    const confirm = window.confirm('Are you sure you want to unlink this criminal from the case?');
-    if (!confirm) return;
+  // Confirm Unlink from Case
+  const handleConfirmUnlink = async () => {
+    if (!unlinkTarget) return;
+    setConfirmLoading(true);
     try {
-      await criminalService.unlinkCase(criminalId, caseId);
-      setSuccessMsg('Criminal unlinked from case.');
+      await criminalService.unlinkCase(unlinkTarget.criminalId, unlinkTarget.caseId);
+      toast.success('Criminal unlinked from case record.');
       fetchCriminals(pagination.page);
       if (selectedCriminal && isDossierModalOpen) {
-        const refreshed = await criminalService.getCriminalById(criminalId);
+        const refreshed = await criminalService.getCriminalById(unlinkTarget.criminalId);
         setSelectedCriminal(refreshed.data.criminal);
       }
+      setUnlinkTarget(null);
     } catch (err) {
-      setError(err.message || 'Failed to unlink criminal.');
+      toast.error(err.message || 'Failed to unlink criminal: ' + err.message);
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
-  // Handle Delete
-  const handleDeleteCriminal = async (criminalDoc) => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete profile for "${criminalDoc.name}"? This action is logged.`
-    );
-    if (!confirmDelete) return;
-
+  // Confirm Delete
+  const handleConfirmDelete = async () => {
+    if (!criminalToDelete) return;
+    setConfirmLoading(true);
     try {
-      await criminalService.deleteCriminal(criminalDoc._id);
-      setSuccessMsg(`Profile "${criminalDoc.name}" has been deleted.`);
+      await criminalService.deleteCriminal(criminalToDelete._id);
+      toast.success(`Profile "${criminalToDelete.name}" deleted from registry.`);
+      setCriminalToDelete(null);
       fetchCriminals(pagination.page);
     } catch (err) {
-      setError(err.message || 'Failed to delete criminal record.');
+      toast.error(err.message || 'Failed to delete criminal record.');
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -242,768 +262,718 @@ export default function Criminals() {
   };
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Header Banner */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="badge-info font-bold">IDENTITY MASTER</span>
-            <span className="text-xs text-slate-500 font-mono">Criminal Identity & Case Associations</span>
-          </div>
-          <h1 className="text-2xl font-bold text-navy-900 mt-2 tracking-tight">
-            Criminal Identity & Repeat Offender Registry
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Global criminal master database with privacy-preserving identity checks and case association.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3 shrink-0">
-          {/* Privacy-Preserving Global Lookup Button */}
-          <button
-            onClick={() => {
-              setMinimalQuery('');
-              setMinimalResults([]);
-              setIsSearchModalOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-sm border border-slate-300 transition"
-          >
-            <Search className="w-4 h-4 text-brand-blue" />
-            <span>Global Identity Lookup</span>
-          </button>
-
-          {!isReadOnlyViewer && (
-            <button
+    <div className="space-y-6">
+      {/* Page Header */}
+      <PageHeader
+        title="Criminal Identity & Repeat Offender Registry"
+        subtitle="Global criminal master database with privacy-preserving identity checks and cross-case association."
+        badge="MASTER REGISTRY"
+        actions={
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              icon={Search}
               onClick={() => {
-                setError(null);
-                fetchCasesForLinking();
-                setFormData({
-                  name: '',
-                  aliases: '',
-                  age: '',
-                  gender: 'MALE',
-                  identifyingMarks: '',
-                  photoUrl: '',
-                  address: '',
-                  caseId: accessibleCases[0]?._id || '',
-                });
-                setIsCreateModalOpen(true);
+                setMinimalQuery('');
+                setMinimalResults([]);
+                setIsSearchModalOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-blue hover:bg-brand-hoverBlue text-white font-semibold rounded-lg text-sm shadow transition"
             >
-              <UserPlus className="w-4 h-4" />
-              <span>Register Criminal</span>
-            </button>
-          )}
-        </div>
-      </div>
+              Global Identity Lookup
+            </Button>
+
+            {!isReadOnlyViewer && (
+              <Button
+                variant="primary"
+                size="sm"
+                icon={UserPlus}
+                onClick={() => {
+                  fetchCasesForLinking();
+                  setFormData({
+                    name: '',
+                    aliases: '',
+                    age: '',
+                    gender: 'MALE',
+                    identifyingMarks: '',
+                    photoUrl: '',
+                    address: '',
+                    caseId: accessibleCases[0]?._id || '',
+                  });
+                  setIsCreateModalOpen(true);
+                }}
+              >
+                Register Criminal
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {/* Privacy Notice Banner */}
-      <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl flex items-start gap-3 text-xs text-slate-700">
+      <div className="p-4 bg-navy-50 border border-brand-blue/20 rounded-xl flex items-start gap-3 text-xs text-navy-800">
         <Lock className="w-4 h-4 text-brand-blue shrink-0 mt-0.5" />
         <div>
-          <strong className="text-navy-900">Strict Privacy Enforcement:</strong> The Criminal Identity Master is globally searchable for identity matching, but case-scoped records (FIR complaints, investigation notes, and evidence) are strictly isolated to assigned Investigating Officers and their supervisors.
+          <strong className="text-navy-950 font-semibold">Strict Privacy Enforcement:</strong> The Criminal Identity Master is globally searchable across departments for identity matching, but case-scoped records (FIR complaints, investigation notes, and evidence) remain strictly isolated to assigned Investigating Officers and their supervisors.
         </div>
       </div>
 
-      {/* Notifications */}
-      {successMsg && (
-        <div className="p-4 bg-semantic-successBg border border-emerald-200 rounded-lg flex items-center justify-between text-emerald-800 text-sm">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{successMsg}</span>
+      {/* Filter and Search Bar */}
+      <div className="card-surface p-4">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+          <form onSubmit={handleSearchSubmit} className="w-full md:w-96 relative">
+            <input
+              type="text"
+              placeholder="Search by Name, Alias, Marks..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition"
+            />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          </form>
+
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <select
+              value={genderFilter}
+              onChange={(e) => setGenderFilter(e.target.value)}
+              className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue font-medium"
+            >
+              <option value="">All Genders</option>
+              {GENDERS.map((g) => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+
+            {(search || genderFilter) && (
+              <Button variant="ghost" size="sm" onClick={handleResetFilters}>
+                Clear
+              </Button>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              icon={RefreshCw}
+              onClick={() => fetchCriminals(pagination.page)}
+            >
+              Refresh
+            </Button>
           </div>
-          <button onClick={() => setSuccessMsg(null)} className="text-emerald-600 hover:text-emerald-900">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 bg-semantic-dangerBg border border-red-200 rounded-lg flex items-center justify-between text-red-800 text-sm">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-            <span>{error}</span>
-          </div>
-          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-900">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {/* Search and Filters Bar */}
-      <div className="card-surface p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-        <form onSubmit={handleSearchSubmit} className="w-full md:w-80 relative">
-          <input
-            type="text"
-            placeholder="Search by Name, Alias, Identifying Marks..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:bg-white transition"
-          />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-        </form>
-
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <select
-            value={genderFilter}
-            onChange={(e) => setGenderFilter(e.target.value)}
-            className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-blue"
-          >
-            <option value="">All Genders</option>
-            {GENDERS.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
-      {/* Criminal Registry Table */}
+      {/* Criminals Table */}
       <div className="card-surface overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-3.5">Criminal Record</th>
-                <th className="px-6 py-3.5">Demographics</th>
-                <th className="px-6 py-3.5">Physical Identifying Marks</th>
-                <th className="px-6 py-3.5">Associated Active Cases</th>
-                <th className="px-6 py-3.5">Last Known Address</th>
-                <th className="px-6 py-3.5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
-                    Loading criminal records...
-                  </td>
-                </tr>
-              ) : criminals.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-slate-500">
-                    No criminal records found in your operational scope. Use Global Lookup to search national records.
-                  </td>
-                </tr>
-              ) : (
-                criminals.map((c) => (
-                  <tr key={c._id} className="hover:bg-slate-50/80 transition">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center font-bold text-navy-900 shrink-0 text-sm">
-                          {c.name.charAt(0).toUpperCase()}
+        {loading ? (
+          <TableSkeleton rows={8} columns={6} />
+        ) : criminals.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="No Criminal Records Found"
+            description={
+              search || genderFilter
+                ? 'No criminal records matched your search filters. Try adjusting the query.'
+                : 'No criminal profiles registered in your operational scope yet.'
+            }
+            action={
+              (search || genderFilter) ? (
+                <Button variant="outline" size="sm" onClick={handleResetFilters}>
+                  Clear Search Filters
+                </Button>
+              ) : !isReadOnlyViewer ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={UserPlus}
+                  onClick={() => {
+                    fetchCasesForLinking();
+                    setIsCreateModalOpen(true);
+                  }}
+                >
+                  Register First Profile
+                </Button>
+              ) : null
+            }
+          />
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="app-table">
+                <thead>
+                  <tr>
+                    <th>Criminal Identity</th>
+                    <th>Demographics</th>
+                    <th>Physical Marks / Tattoos</th>
+                    <th>Associated Cases</th>
+                    <th>Last Known Location</th>
+                    <th className="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {criminals.map((c) => (
+                    <tr key={c._id}>
+                      <td>
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-navy-900 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-sm">
+                            {c.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-navy-950 text-xs">{c.name}</p>
+                            {c.aliases && c.aliases.length > 0 && (
+                              <p className="text-[11px] text-brand-blue font-mono mt-0.5">
+                                Alias: {c.aliases.join(', ')}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-navy-900">{c.name}</p>
-                          {c.aliases && c.aliases.length > 0 && (
-                            <p className="text-[10px] text-brand-blue font-medium mt-0.5">
-                              Alias: {c.aliases.join(', ')}
-                            </p>
+                      </td>
+                      <td>
+                        <span className="font-semibold text-slate-700 text-xs">{c.gender}</span>
+                        {c.age && <span className="text-slate-500 text-xs"> • {c.age} yrs</span>}
+                      </td>
+                      <td className="text-slate-600 max-w-xs truncate text-xs">
+                        {c.identifyingMarks || <span className="text-slate-400 italic">None logged</span>}
+                      </td>
+                      <td>
+                        {c.associatedCaseIds && c.associatedCaseIds.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {c.associatedCaseIds.map((caseRef) => (
+                              <span
+                                key={caseRef._id || caseRef}
+                                className="font-mono text-[10px] bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-semibold"
+                              >
+                                {caseRef.caseNumber || 'CASE'}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">No linked cases</span>
+                        )}
+                      </td>
+                      <td className="text-slate-500 truncate max-w-xs text-xs">
+                        {c.address ? (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span className="truncate">{c.address}</span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">Unrecorded</span>
+                        )}
+                      </td>
+                      <td className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {/* Dossier */}
+                          <button
+                            onClick={() => openDossier(c)}
+                            className="p-1.5 text-brand-blue hover:bg-navy-50 rounded-lg transition"
+                            title="View Complete Criminal Dossier"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+
+                          {/* Link to Case */}
+                          {!isReadOnlyViewer && (
+                            <button
+                              onClick={() => {
+                                setSelectedCriminal(c);
+                                fetchCasesForLinking();
+                                setIsLinkModalOpen(true);
+                              }}
+                              className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg transition"
+                              title="Link to Active Case Investigation"
+                            >
+                              <LinkIcon className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {/* Edit Details */}
+                          {!isReadOnlyViewer && (
+                            <button
+                              onClick={() => {
+                                setSelectedCriminal(c);
+                                setFormData({
+                                  name: c.name,
+                                  aliases: (c.aliases || []).join(', '),
+                                  age: c.age || '',
+                                  gender: c.gender || 'MALE',
+                                  identifyingMarks: c.identifyingMarks || '',
+                                  photoUrl: c.photoUrl || '',
+                                  address: c.address || '',
+                                  caseId: '',
+                                });
+                                setIsEditModalOpen(true);
+                              }}
+                              className="p-1.5 text-slate-600 hover:text-brand-blue hover:bg-slate-100 rounded-lg transition"
+                              title="Edit Profile"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {/* Delete (Admin only) */}
+                          {!isReadOnlyViewer && isAdmin && (
+                            <button
+                              onClick={() => setCriminalToDelete(c)}
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition"
+                              title="Delete Record"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           )}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-semibold text-slate-700">{c.gender}</span>
-                      {c.age && <span className="text-slate-500"> • {c.age} yrs</span>}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600 max-w-xs truncate">
-                      {c.identifyingMarks || <span className="text-slate-400">None logged</span>}
-                    </td>
-                    <td className="px-6 py-4">
-                      {c.associatedCaseIds && c.associatedCaseIds.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {c.associatedCaseIds.map((caseRef) => (
-                            <span
-                              key={caseRef._id || caseRef}
-                              className="font-mono text-[10px] bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded font-bold"
-                            >
-                              {caseRef.caseNumber || 'CASE'}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-[11px] text-slate-400">No linked cases in scope</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-slate-500 truncate max-w-xs">
-                      {c.address || 'Unknown'}
-                    </td>
-                    <td className="px-6 py-4 text-right space-x-1.5">
-                      {/* View Dossier */}
-                      <button
-                        onClick={() => openDossier(c)}
-                        className="p-1.5 text-brand-blue hover:bg-blue-50 rounded transition"
-                        title="View Criminal Dossier & Profile"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-                      {/* Link to Case */}
-                      {!isReadOnlyViewer && (
-                        <button
-                          onClick={() => {
-                            setSelectedCriminal(c);
-                            fetchCasesForLinking();
-                            setIsLinkModalOpen(true);
-                          }}
-                          className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition"
-                          title="Link to Active Case"
-                        >
-                          <LinkIcon className="w-4 h-4" />
-                        </button>
-                      )}
-
-                      {/* Edit Details */}
-                      {!isReadOnlyViewer && (
-                        <button
-                          onClick={() => {
-                            setSelectedCriminal(c);
-                            setFormData({
-                              name: c.name,
-                              aliases: (c.aliases || []).join(', '),
-                              age: c.age || '',
-                              gender: c.gender || 'MALE',
-                              identifyingMarks: c.identifyingMarks || '',
-                              photoUrl: c.photoUrl || '',
-                              address: c.address || '',
-                              caseId: '',
-                            });
-                            setIsEditModalOpen(true);
-                          }}
-                          className="p-1.5 text-slate-600 hover:text-brand-blue hover:bg-slate-100 rounded transition"
-                          title="Edit Profile"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                      )}
-
-                      {/* Delete */}
-                      {!isReadOnlyViewer && isAdmin && (
-                        <button
-                          onClick={() => handleDeleteCriminal(c)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
-                          title="Delete Record"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
-          <span>
-            Showing page <strong>{pagination.page}</strong> of <strong>{pagination.totalPages}</strong> ({pagination.total} criminal records)
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => fetchCriminals(pagination.page - 1)}
-              disabled={pagination.page <= 1}
-              className="px-3 py-1.5 bg-white border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-40 font-medium transition"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => fetchCriminals(pagination.page + 1)}
-              disabled={pagination.page >= pagination.totalPages}
-              className="px-3 py-1.5 bg-white border border-slate-300 rounded hover:bg-slate-100 disabled:opacity-40 font-medium transition"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+              onPageChange={(p) => fetchCriminals(p)}
+            />
+          </>
+        )}
       </div>
 
       {/* PRIVACY-PRESERVING GLOBAL LOOKUP MODAL */}
-      {isSearchModalOpen && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full overflow-hidden max-h-[85vh] flex flex-col">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
-              <div className="flex items-center gap-2">
-                <Search className="w-5 h-5 text-brand-blue" />
-                <h3 className="font-bold text-base text-navy-900">
-                  Global Minimal Identification Lookup
-                </h3>
-              </div>
-              <button onClick={() => setIsSearchModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        title="Global Privacy-Preserving Identity Lookup"
+        subtitle="Search across state departments for identity matching while isolating case data"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 leading-relaxed">
+            <strong>Cross-Jurisdiction Lookup:</strong> Returns minimal physical markers (name, known aliases, gender, scars/tattoos) to match repeat offenders. Case files, complaints, and evidence notes remain strictly isolated.
+          </div>
 
-            <div className="p-6 space-y-4 overflow-y-auto text-xs">
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900">
-                <strong>Privacy Protected Search:</strong> Returns minimal identity markers (name, aliases, age, gender, scars/tattoos) across all departments. Private case details, FIRs, and officer notes remain hidden.
-              </div>
+          <form onSubmit={handleMinimalSearch} className="flex gap-2">
+            <input
+              type="text"
+              required
+              placeholder="Search by name, alias, tattoo, or identifying marks..."
+              value={minimalQuery}
+              onChange={(e) => setMinimalQuery(e.target.value)}
+              className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none transition"
+            />
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              loading={minimalSearching}
+              icon={Search}
+            >
+              Search
+            </Button>
+          </form>
 
-              <form onSubmit={handleMinimalSearch} className="flex gap-2">
-                <input
-                  type="text"
-                  required
-                  placeholder="Enter name, alias, or physical mark (e.g. 'Shadow', 'Dragon tattoo')..."
-                  value={minimalQuery}
-                  onChange={(e) => setMinimalQuery(e.target.value)}
-                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-                <button
-                  type="submit"
-                  disabled={minimalSearching}
-                  className="px-4 py-2 bg-brand-blue text-white font-semibold rounded-lg hover:bg-brand-hoverBlue disabled:opacity-50"
+          {/* Search Results */}
+          <div className="space-y-3 pt-2 max-h-80 overflow-y-auto">
+            {minimalResults.length > 0 ? (
+              minimalResults.map((item) => (
+                <div
+                  key={item._id}
+                  className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-4"
                 >
-                  {minimalSearching ? 'Searching...' : 'Search'}
-                </button>
-              </form>
-
-              {/* Minimal Results List */}
-              <div className="space-y-3 pt-2">
-                {minimalResults.length > 0 ? (
-                  minimalResults.map((item) => (
-                    <div
-                      key={item._id}
-                      className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-4"
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-sm text-navy-900">{item.name}</span>
-                          <span className="badge-info">{item.gender} • {item.age || 'N/A'} yrs</span>
-                        </div>
-                        {item.aliases?.length > 0 && (
-                          <p className="text-brand-blue font-mono text-[11px]">
-                            Known Aliases: {item.aliases.join(', ')}
-                          </p>
-                        )}
-                        <p className="text-slate-600 text-[11px]">
-                          <strong>Identifying Marks:</strong> {item.identifyingMarks || 'None'}
-                        </p>
-                      </div>
-
-                      {!isReadOnlyViewer && (
-                        <button
-                          onClick={() => {
-                            setSelectedCriminal(item);
-                            fetchCasesForLinking();
-                            setIsSearchModalOpen(false);
-                            setIsLinkModalOpen(true);
-                          }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg text-xs shrink-0"
-                        >
-                          <LinkIcon className="w-3.5 h-3.5" />
-                          <span>Link to Case</span>
-                        </button>
-                      )}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-navy-950">{item.name}</span>
+                      <Badge variant="info">{item.gender} • {item.age ? `${item.age} yrs` : 'Age N/A'}</Badge>
                     </div>
-                  ))
-                ) : minimalQuery && !minimalSearching ? (
-                  <p className="text-slate-400 text-center py-6">No matching criminal records found.</p>
-                ) : null}
-              </div>
-            </div>
+                    {item.aliases?.length > 0 && (
+                      <p className="text-brand-blue font-mono text-xs">
+                        Aliases: {item.aliases.join(', ')}
+                      </p>
+                    )}
+                    <p className="text-slate-600 text-xs">
+                      <strong>Identifying Marks:</strong> {item.identifyingMarks || 'None logged'}
+                    </p>
+                  </div>
+
+                  {!isReadOnlyViewer && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={LinkIcon}
+                      onClick={() => {
+                        setSelectedCriminal(item);
+                        fetchCasesForLinking();
+                        setIsSearchModalOpen(false);
+                        setIsLinkModalOpen(true);
+                      }}
+                    >
+                      Link to Case
+                    </Button>
+                  )}
+                </div>
+              ))
+            ) : minimalQuery && !minimalSearching ? (
+              <p className="text-slate-400 text-center py-6 text-xs">No matching records found across registry.</p>
+            ) : null}
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* REGISTER CRIMINAL MODAL */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
-              <h3 className="font-bold text-base text-navy-900 flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-brand-blue" />
-                Register Criminal Profile
-              </h3>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Register Criminal Profile"
+        subtitle="Create a new identity record in the central repeat-offender master registry"
+        size="lg"
+      >
+        <form onSubmit={handleCreateSubmit} className="space-y-4">
+          <FormField label="Full Legal / Primary Name" required>
+            <Input
+              required
+              placeholder="e.g. Vikram Malhotra"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </FormField>
 
-            <form onSubmit={handleCreateSubmit} className="p-6 space-y-4 text-xs overflow-y-auto">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Full Legal / Primary Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Vikram Malhotra"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Known Aliases (Comma separated)">
+              <Input
+                placeholder="e.g. Shadow, Vicky, Tiger"
+                value={formData.aliases}
+                onChange={(e) => setFormData({ ...formData, aliases: e.target.value })}
+              />
+            </FormField>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Aliases (Comma separated)</label>
-                  <input
-                    type="text"
-                    placeholder="Shadow, Vicky"
-                    value={formData.aliases}
-                    onChange={(e) => setFormData({ ...formData, aliases: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Gender</label>
-                  <select
-                    value={formData.gender}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none font-medium"
-                  >
-                    {GENDERS.map((g) => (
-                      <option key={g} value={g}>
-                        {g}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Approximate Age</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 34"
-                    value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Initial Case Link (Optional)</label>
-                  <select
-                    value={formData.caseId}
-                    onChange={(e) => setFormData({ ...formData, caseId: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none font-mono"
-                  >
-                    <option value="">None (Standalone Identity)</option>
-                    {accessibleCases.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.caseNumber} — {c.summary?.substring(0, 30)}...
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Physical Identifying Marks / Tattoos / Scars</label>
-                <textarea
-                  rows={2}
-                  placeholder="e.g. Deep scar on left cheek, dragon tattoo on forearm..."
-                  value={formData.identifyingMarks}
-                  onChange={(e) => setFormData({ ...formData, identifyingMarks: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Last Known Address / Hideout</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Flat 402, Sunshine Enclave, Rohini"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 bg-brand-blue hover:bg-brand-hoverBlue text-white rounded-lg font-semibold shadow disabled:opacity-50"
-                >
-                  {submitting ? 'Registering...' : 'Register Profile'}
-                </button>
-              </div>
-            </form>
+            <FormField label="Gender" required>
+              <Select
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              >
+                {GENDERS.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </Select>
+            </FormField>
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Approximate Age">
+              <Input
+                type="number"
+                min="0"
+                placeholder="e.g. 34"
+                value={formData.age}
+                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+              />
+            </FormField>
+
+            <FormField label="Initial Case Association (Optional)">
+              <Select
+                value={formData.caseId}
+                onChange={(e) => setFormData({ ...formData, caseId: e.target.value })}
+              >
+                <option value="">None (Standalone Registry Profile)</option>
+                {accessibleCases.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.caseNumber} — {c.summary?.substring(0, 30)}...
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+          </div>
+
+          <FormField label="Physical Identifying Marks / Tattoos / Scars">
+            <Textarea
+              rows={2}
+              placeholder="e.g. Deep scar on left cheek, dragon tattoo on right forearm..."
+              value={formData.identifyingMarks}
+              onChange={(e) => setFormData({ ...formData, identifyingMarks: e.target.value })}
+            />
+          </FormField>
+
+          <FormField label="Last Known Address / Hideout">
+            <Input
+              placeholder="e.g. Flat 402, Sunshine Enclave, Rohini, New Delhi"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            />
+          </FormField>
+
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={submitting}
+              icon={UserPlus}
+            >
+              Register Profile
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* LINK TO CASE MODAL */}
-      {isLinkModalOpen && selectedCriminal && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-base text-navy-900 flex items-center gap-2">
-                <LinkIcon className="w-4 h-4 text-purple-600" />
-                Link Criminal to Case
-              </h3>
-              <button onClick={() => setIsLinkModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleLinkSubmit} className="p-6 space-y-4 text-xs">
-              <p className="text-slate-600">
-                Associate <strong>{selectedCriminal.name}</strong> as an active suspect/accused in one of your assigned case files.
+      <Modal
+        isOpen={isLinkModalOpen && !!selectedCriminal}
+        onClose={() => setIsLinkModalOpen(false)}
+        title="Link Criminal to Case"
+        subtitle={`Associate ${selectedCriminal?.name} as suspect/accused in an active case`}
+        size="md"
+      >
+        <form onSubmit={handleLinkSubmit} className="space-y-4">
+          <FormField label="Target Case Investigation" required>
+            {accessibleCases.length === 0 ? (
+              <p className="text-red-600 text-xs font-medium p-3 bg-red-50 rounded-lg border border-red-200">
+                No active cases found in your jurisdiction.
               </p>
+            ) : (
+              <Select
+                required
+                value={targetCaseId}
+                onChange={(e) => setTargetCaseId(e.target.value)}
+              >
+                {accessibleCases.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.caseNumber} — {c.summary?.substring(0, 40)}...
+                  </option>
+                ))}
+              </Select>
+            )}
+          </FormField>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Select Case Investigation</label>
-                {accessibleCases.length === 0 ? (
-                  <p className="text-red-500 font-medium p-2 bg-red-50 rounded border border-red-200">
-                    No active cases found in your scope.
-                  </p>
-                ) : (
-                  <select
-                    required
-                    value={targetCaseId}
-                    onChange={(e) => setTargetCaseId(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-medium focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none font-mono"
-                  >
-                    {accessibleCases.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.caseNumber} — {c.summary?.substring(0, 35)}...
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsLinkModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting || accessibleCases.length === 0}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold shadow disabled:opacity-50"
-                >
-                  {submitting ? 'Linking...' : 'Confirm Association'}
-                </button>
-              </div>
-            </form>
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsLinkModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={submitting}
+              disabled={accessibleCases.length === 0}
+              icon={LinkIcon}
+            >
+              Confirm Association
+            </Button>
           </div>
-        </div>
-      )}
+        </form>
+      </Modal>
 
       {/* EDIT MODAL */}
-      {isEditModalOpen && selectedCriminal && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
-              <h3 className="font-bold text-base text-navy-900 flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-brand-blue" />
-                Edit Criminal Profile: {selectedCriminal.name}
-              </h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={isEditModalOpen && !!selectedCriminal}
+        onClose={() => setIsEditModalOpen(false)}
+        title={`Edit Profile: ${selectedCriminal?.name}`}
+        subtitle="Update suspect details and demographic markers"
+        size="lg"
+      >
+        <form onSubmit={handleEditSubmit} className="space-y-4">
+          <FormField label="Full Legal Name" required>
+            <Input
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </FormField>
 
-            <form onSubmit={handleEditSubmit} className="p-6 space-y-4 text-xs overflow-y-auto">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Full Legal Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Aliases (Comma separated)">
+              <Input
+                value={formData.aliases}
+                onChange={(e) => setFormData({ ...formData, aliases: e.target.value })}
+              />
+            </FormField>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Aliases (Comma separated)</label>
-                  <input
-                    type="text"
-                    value={formData.aliases}
-                    onChange={(e) => setFormData({ ...formData, aliases: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Gender</label>
-                  <select
-                    value={formData.gender}
-                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                  >
-                    {GENDERS.map((g) => (
-                      <option key={g} value={g}>
-                        {g}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Approximate Age</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Physical Identifying Marks</label>
-                <textarea
-                  rows={2}
-                  value={formData.identifyingMarks}
-                  onChange={(e) => setFormData({ ...formData, identifyingMarks: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Last Known Address</label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 bg-brand-blue hover:bg-brand-hoverBlue text-white rounded-lg font-semibold shadow disabled:opacity-50"
-                >
-                  {submitting ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
+            <FormField label="Gender" required>
+              <Select
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              >
+                {GENDERS.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </Select>
+            </FormField>
           </div>
-        </div>
-      )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Approximate Age">
+              <Input
+                type="number"
+                min="0"
+                value={formData.age}
+                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Physical Identifying Marks">
+            <Textarea
+              rows={2}
+              value={formData.identifyingMarks}
+              onChange={(e) => setFormData({ ...formData, identifyingMarks: e.target.value })}
+            />
+          </FormField>
+
+          <FormField label="Last Known Address">
+            <Input
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            />
+          </FormField>
+
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={submitting}
+            >
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* CRIMINAL DOSSIER MODAL */}
-      {isDossierModalOpen && selectedCriminal && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full overflow-hidden max-h-[90vh] flex flex-col font-sans">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-navy-900 text-white shrink-0">
-              <div className="flex items-center gap-2">
-                <Fingerprint className="w-5 h-5 text-brand-blue" />
-                <h3 className="font-bold text-base">
-                  Criminal Profile Dossier: {selectedCriminal.name}
-                </h3>
-              </div>
-              <button onClick={() => setIsDossierModalOpen(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
+      <Modal
+        isOpen={isDossierModalOpen && !!selectedCriminal}
+        onClose={() => setIsDossierModalOpen(false)}
+        title={`Criminal Dossier: ${selectedCriminal?.name}`}
+        subtitle="Complete identity profile and authorized case linkages"
+        size="lg"
+      >
+        <div className="space-y-6">
+          {/* Identity Header */}
+          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-navy-900 text-white flex items-center justify-center font-bold text-xl shrink-0 shadow-md">
+              {selectedCriminal?.name.charAt(0).toUpperCase()}
             </div>
-
-            <div className="p-6 space-y-6 overflow-y-auto text-xs">
-              {/* Profile Bio Header */}
-              <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 flex items-start gap-4">
-                <div className="w-14 h-14 rounded-full bg-navy-900 text-white flex items-center justify-center font-bold text-xl shrink-0">
-                  {selectedCriminal.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-base font-bold text-navy-900">{selectedCriminal.name}</h4>
-                  {selectedCriminal.aliases?.length > 0 && (
-                    <p className="text-brand-blue font-semibold">
-                      Known Aliases: {selectedCriminal.aliases.join(', ')}
-                    </p>
-                  )}
-                  <p className="text-slate-600">
-                    Gender: <strong>{selectedCriminal.gender}</strong> | Age: <strong>{selectedCriminal.age || 'N/A'} yrs</strong>
-                  </p>
-                </div>
-              </div>
-
-              {/* Physical Markers & Address */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 bg-slate-50 border rounded-xl">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Physical Identifying Marks
-                  </span>
-                  <p className="font-medium text-slate-800 mt-1">
-                    {selectedCriminal.identifyingMarks || 'No distinctive marks recorded.'}
-                  </p>
-                </div>
-
-                <div className="p-4 bg-slate-50 border rounded-xl">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Last Known Location / Address
-                  </span>
-                  <p className="font-medium text-slate-800 mt-1">
-                    {selectedCriminal.address || 'Address unverified.'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Associated Cases (Scoped to User Access) */}
-              <div>
-                <h4 className="font-bold text-xs uppercase text-navy-900 tracking-wider mb-2 flex items-center gap-1.5">
-                  <Briefcase className="w-4 h-4 text-brand-blue" />
-                  Authorized Linked Case Files ({selectedCriminal.associatedCaseIds?.length || 0})
-                </h4>
-
-                {selectedCriminal.associatedCaseIds?.length === 0 ? (
-                  <p className="text-slate-400 py-3 bg-slate-50 rounded-lg text-center border">
-                    No linked active cases in your authorized jurisdiction.
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {selectedCriminal.associatedCaseIds?.map((cRef) => (
-                      <div
-                        key={cRef._id}
-                        className="p-3 bg-purple-50/60 border border-purple-200 rounded-lg flex items-center justify-between text-xs"
-                      >
-                        <div>
-                          <span className="font-bold font-mono text-navy-900">{cRef.caseNumber}</span>
-                          <span className="ml-2 badge-info">{cRef.status}</span>
-                          <p className="text-[11px] text-slate-600 mt-0.5">{cRef.summary}</p>
-                        </div>
-
-                        {!isReadOnlyViewer && (
-                          <button
-                            onClick={() => handleUnlink(selectedCriminal._id, cRef._id)}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
-                            title="Unlink Case"
-                          >
-                            <Unlink className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+            <div className="space-y-1">
+              <h4 className="text-base font-bold text-navy-950">{selectedCriminal?.name}</h4>
+              {selectedCriminal?.aliases?.length > 0 && (
+                <p className="text-brand-blue text-xs font-mono font-semibold">
+                  Known Aliases: {selectedCriminal.aliases.join(', ')}
+                </p>
+              )}
+              <p className="text-slate-600 text-xs">
+                Gender: <strong className="text-slate-800">{selectedCriminal?.gender}</strong> • Age: <strong className="text-slate-800">{selectedCriminal?.age || 'N/A'} yrs</strong>
+              </p>
             </div>
           </div>
+
+          {/* Physical Markers & Location */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Physical Identifying Marks
+              </span>
+              <p className="font-medium text-slate-800 text-xs">
+                {selectedCriminal?.identifyingMarks || 'No distinctive physical marks logged.'}
+              </p>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Last Known Location / Address
+              </span>
+              <p className="font-medium text-slate-800 text-xs">
+                {selectedCriminal?.address || 'Address unrecorded.'}
+              </p>
+            </div>
+          </div>
+
+          {/* Associated Cases */}
+          <div>
+            <h4 className="font-bold text-xs uppercase text-navy-950 tracking-wider mb-3 flex items-center gap-2">
+              <Briefcase className="w-4 h-4 text-brand-blue" />
+              Authorized Linked Case Files ({selectedCriminal?.associatedCaseIds?.length || 0})
+            </h4>
+
+            {selectedCriminal?.associatedCaseIds?.length === 0 ? (
+              <p className="text-slate-400 py-6 bg-slate-50 rounded-xl text-center border border-dashed border-slate-200 text-xs">
+                No active case associations found within your authorized jurisdiction.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {selectedCriminal?.associatedCaseIds?.map((cRef) => (
+                  <div
+                    key={cRef._id}
+                    className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold font-mono text-navy-950">{cRef.caseNumber}</span>
+                        <Badge variant="info">{cRef.status}</Badge>
+                      </div>
+                      <p className="text-[11px] text-slate-600 mt-1">{cRef.summary}</p>
+                    </div>
+
+                    {!isReadOnlyViewer && (
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        icon={Unlink}
+                        className="text-red-600 hover:bg-red-50 shrink-0"
+                        onClick={() => setUnlinkTarget({
+                          criminalId: selectedCriminal._id,
+                          caseId: cRef._id,
+                          caseNumber: cRef.caseNumber || 'Case'
+                        })}
+                      >
+                        Unlink
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </Modal>
+
+      {/* CONFIRM DELETE DIALOG */}
+      <ConfirmDialog
+        isOpen={!!criminalToDelete}
+        onClose={() => setCriminalToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Criminal Record"
+        message={`Are you sure you want to delete profile for "${criminalToDelete?.name}"? All associated case links will be detached. This action is permanently audited.`}
+        confirmText="Delete Record"
+        confirmVariant="danger"
+        loading={confirmLoading}
+      />
+
+      {/* CONFIRM UNLINK DIALOG */}
+      <ConfirmDialog
+        isOpen={!!unlinkTarget}
+        onClose={() => setUnlinkTarget(null)}
+        onConfirm={handleConfirmUnlink}
+        title="Unlink Criminal from Case"
+        message={`Are you sure you want to remove the association between this criminal and ${unlinkTarget?.caseNumber}?`}
+        confirmText="Unlink Case"
+        confirmVariant="danger"
+        loading={confirmLoading}
+      />
     </div>
   );
 }
+

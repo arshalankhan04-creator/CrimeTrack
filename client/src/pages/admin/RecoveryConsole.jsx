@@ -11,15 +11,27 @@ import {
   ArrowRight,
   RefreshCw,
   Undo2,
-  ChevronLeft,
-  ChevronRight
+  FileCode,
+  Eye,
+  AlertCircle
 } from 'lucide-react';
 import recoveryService from '../../services/recoveryService';
 import auditService from '../../services/auditService';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import PageHeader from '../../components/common/PageHeader';
+import StatCard from '../../components/common/StatCard';
+import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
+import Modal from '../../components/common/Modal';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { TableSkeleton } from '../../components/common/Skeletons';
+import EmptyState from '../../components/common/EmptyState';
+import ErrorState from '../../components/common/ErrorState';
 
 export default function RecoveryConsole() {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
 
   // Active Tab
   const [activeTab, setActiveTab] = useState('REVERSIBLE'); // 'REVERSIBLE' | 'HISTORY'
@@ -31,7 +43,10 @@ export default function RecoveryConsole() {
   const [loading, setLoading] = useState(false);
   const [processingId, setProcessingId] = useState(null);
   const [error, setError] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
+
+  // Modal States
+  const [selectedLogForDiff, setSelectedLogForDiff] = useState(null);
+  const [confirmRollbackLog, setConfirmRollbackLog] = useState(null);
 
   const fetchConsoleData = async () => {
     setLoading(true);
@@ -53,7 +68,7 @@ export default function RecoveryConsole() {
       setStats(statsRes.data.stats || null);
     } catch (err) {
       console.error('Failed to load recovery console data:', err);
-      setError(err.message || 'Failed to load recovery console.');
+      setError(err.message || 'Failed to load recovery console data.');
     } finally {
       setLoading(false);
     }
@@ -63,194 +78,199 @@ export default function RecoveryConsole() {
     fetchConsoleData();
   }, []);
 
-  const handleRollback = async (logItem) => {
-    const confirm = window.confirm(
-      `Confirm rollback: Revert '${logItem.action}' on ${logItem.entityType}? Previous snapshot will be written back to the database.`
-    );
-    if (!confirm) return;
-
+  const handleExecuteRollback = async () => {
+    if (!confirmRollbackLog) return;
+    const logItem = confirmRollbackLog;
     setProcessingId(logItem._id);
-    setError(null);
     try {
       const res = await recoveryService.undoMutation(logItem._id);
-      setSuccessMsg(res.data.message || 'Rollback executed successfully.');
+      showSuccess(res.data.message || `Rollback executed: ${logItem.action} on ${logItem.entityType} restored.`);
+      setConfirmRollbackLog(null);
       fetchConsoleData();
     } catch (err) {
-      setError(err.message || 'Failed to execute rollback.');
+      showError(err.message || 'Failed to execute rollback mutation.');
     } finally {
       setProcessingId(null);
     }
   };
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Header Banner */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="badge-warning font-bold">ADMIN DISASTER RECOVERY</span>
-            <span className="text-xs text-slate-500 font-mono">State-Aware Rollback</span>
-          </div>
-          <h1 className="text-2xl font-bold text-navy-900 mt-2 tracking-tight flex items-center gap-2">
-            <RotateCcw className="w-6 h-6 text-amber-600" />
-            Audit Recovery & Undo Console
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Safely revert accidental mutations, reassignments, or status changes using tamper-evident audit snapshots.
-          </p>
-        </div>
-
-        <button
-          onClick={fetchConsoleData}
-          disabled={loading}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs border transition"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh Engine</span>
-        </button>
-      </div>
-
-      {/* Notifications */}
-      {successMsg && (
-        <div className="p-4 bg-semantic-successBg border border-emerald-200 rounded-lg flex items-center justify-between text-emerald-800 text-xs">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-          <button onClick={() => setSuccessMsg(null)} className="text-emerald-600 hover:text-emerald-900 font-bold">
-            ✕
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 bg-semantic-dangerBg border border-red-200 rounded-lg flex items-center justify-between text-red-800 text-xs">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-            <span>{error}</span>
-          </div>
-          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-900 font-bold">
-            ✕
-          </button>
-        </div>
-      )}
+    <div className="space-y-6">
+      {/* Header */}
+      <PageHeader
+        title="Audit Recovery & Rollback Console"
+        description="Safely inspect previous data snapshots and revert accidental mutations or status transitions using tamper-evident audit logs."
+        breadcrumbs={[
+          { label: 'Admin', path: '/admin/dashboard' },
+          { label: 'System Recovery' },
+        ]}
+        actions={
+          <Button
+            variant="secondary"
+            icon={RefreshCw}
+            loading={loading}
+            onClick={fetchConsoleData}
+          >
+            Refresh Engine
+          </Button>
+        }
+      />
 
       {/* KPI Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="card-surface p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Reversible Mutations</span>
-            <RotateCcw className="w-4 h-4 text-amber-500" />
-          </div>
-          <p className="text-2xl font-bold text-navy-900 mt-2 font-mono">{reversibleLogs.length}</p>
-          <span className="text-[10px] text-slate-500 font-semibold">Ready for one-click rollback</span>
-        </div>
-
-        <div className="card-surface p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Executed Rollbacks</span>
-            <History className="w-4 h-4 text-purple-600" />
-          </div>
-          <p className="text-2xl font-bold text-purple-600 mt-2 font-mono">{recoveryHistory.length}</p>
-          <span className="text-[10px] text-purple-700 font-semibold">Total undo events in ledger</span>
-        </div>
-
-        <div className="card-surface p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase text-slate-400">Recovery Health</span>
-            <ShieldAlert className="w-4 h-4 text-emerald-600" />
-          </div>
-          <p className="text-sm font-bold text-emerald-600 mt-2 font-mono">Forensic Chain Intact</p>
-          <span className="text-[10px] text-slate-500 font-semibold">Non-destructive snapshots active</span>
-        </div>
+        <StatCard
+          title="Reversible Snapshots"
+          value={reversibleLogs.length}
+          subtitle="Available for one-click restoration"
+          icon={RotateCcw}
+          variant="warning"
+        />
+        <StatCard
+          title="Executed Rollbacks"
+          value={recoveryHistory.length}
+          subtitle="Historical state reversals recorded"
+          icon={History}
+          variant="primary"
+        />
+        <StatCard
+          title="Forensic Chain"
+          value="100% Intact"
+          subtitle="Non-destructive append-only log ledger"
+          icon={ShieldAlert}
+          variant="success"
+        />
       </div>
 
+      {error && (
+        <ErrorState
+          title="Console Synchronization Error"
+          message={error}
+          onRetry={fetchConsoleData}
+        />
+      )}
+
       {/* Navigation Tabs */}
-      <div className="flex border-b border-slate-200 gap-4">
+      <div className="flex border-b border-slate-200">
         <button
           onClick={() => setActiveTab('REVERSIBLE')}
-          className={`pb-3 text-xs font-bold transition border-b-2 flex items-center gap-2 ${
+          className={`pb-3 px-4 text-xs font-bold transition border-b-2 flex items-center gap-2 ${
             activeTab === 'REVERSIBLE'
-              ? 'border-amber-600 text-amber-600'
+              ? 'border-amber-600 text-amber-700 bg-amber-50/50 rounded-t-lg'
               : 'border-transparent text-slate-500 hover:text-navy-900'
           }`}
         >
-          <Undo2 className="w-4 h-4" />
-          <span>Reversible Actions Stream ({reversibleLogs.length})</span>
+          <Undo2 className="w-4 h-4 text-amber-600" />
+          <span>Reversible Actions Stream</span>
+          <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-100 text-amber-800">
+            {reversibleLogs.length}
+          </span>
         </button>
 
         <button
           onClick={() => setActiveTab('HISTORY')}
-          className={`pb-3 text-xs font-bold transition border-b-2 flex items-center gap-2 ${
+          className={`pb-3 px-4 text-xs font-bold transition border-b-2 flex items-center gap-2 ${
             activeTab === 'HISTORY'
-              ? 'border-brand-blue text-brand-blue'
+              ? 'border-brand-blue text-brand-blue bg-blue-50/50 rounded-t-lg'
               : 'border-transparent text-slate-500 hover:text-navy-900'
           }`}
         >
-          <History className="w-4 h-4" />
-          <span>Rollback Audit History ({recoveryHistory.length})</span>
+          <History className="w-4 h-4 text-brand-blue" />
+          <span>Rollback Audit History</span>
+          <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-700">
+            {recoveryHistory.length}
+          </span>
         </button>
       </div>
 
-      {/* TAB CONTENT 1: REVERSIBLE MUTATIONS STREAM */}
+      {/* TAB 1: REVERSIBLE ACTIONS */}
       {activeTab === 'REVERSIBLE' && (
-        <div className="card-surface p-6 space-y-4">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-navy-900 flex items-center gap-2">
-              <RotateCcw className="w-4 h-4 text-amber-600" />
-              Reversible Audit Snapshots
-            </h2>
-            <span className="text-[11px] text-slate-500">
-              Only actions with stored previous state snapshots are shown
-            </span>
+            <div>
+              <h2 className="text-sm font-bold text-navy-900">Restorable Snapshot Ledger</h2>
+              <p className="text-xs text-slate-500">
+                Mutations with verified pre-change snapshots available for atomic database rollback.
+              </p>
+            </div>
           </div>
 
           {loading ? (
-            <div className="py-12 text-center text-slate-400 text-xs">Scanning audit snapshots...</div>
+            <TableSkeleton rows={4} columns={4} />
           ) : reversibleLogs.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 text-xs">
-              No reversible mutation snapshots found in recent audit history.
-            </div>
+            <EmptyState
+              icon={RotateCcw}
+              title="No Reversible Snapshots Found"
+              description="No recent mutation logs with restorable previous states exist in the current audit window."
+              actionLabel="Refresh Ledger"
+              onAction={fetchConsoleData}
+            />
           ) : (
             <div className="space-y-3">
               {reversibleLogs.map((log) => (
                 <div
                   key={log._id}
-                  className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  className="card-surface p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-l-4 border-l-amber-500"
                 >
-                  <div className="space-y-1.5 flex-1 min-w-0">
+                  <div className="space-y-2 flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="badge-warning font-mono font-bold text-[10px]">{log.action}</span>
+                      <Badge variant="warning">{log.action}</Badge>
                       <span className="text-xs font-bold text-navy-900">{log.entityType}</span>
-                      <span className="text-[10px] text-slate-400 font-mono truncate max-w-[120px]">
+                      <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
                         ID: {log.entityId}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
                         {new Date(log.createdAt).toLocaleString()}
                       </span>
+                      {log.userId && (
+                        <span className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                          <User className="w-3.5 h-3.5" />
+                          {log.userId.name} ({log.userId.employeeId || 'OFFICER'})
+                        </span>
+                      )}
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono mt-2">
-                      <div className="p-2 bg-red-50 border border-red-200 rounded text-red-900">
-                        <span className="text-[9px] uppercase font-bold text-red-600 block">Snapshot to Restore (Before)</span>
-                        <pre className="text-[10px] truncate whitespace-pre-wrap">{JSON.stringify(log.oldValues)}</pre>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono mt-2">
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-950">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] uppercase font-bold text-red-700">Previous Snapshot (To Restore)</span>
+                          <span className="text-[10px] text-red-600 font-bold">STATE BEFORE</span>
+                        </div>
+                        <pre className="text-[11px] overflow-x-auto max-h-24 whitespace-pre-wrap">
+                          {JSON.stringify(log.oldValues, null, 2)}
+                        </pre>
                       </div>
-                      <div className="p-2 bg-emerald-50 border border-emerald-200 rounded text-emerald-900">
-                        <span className="text-[9px] uppercase font-bold text-emerald-600 block">Current Applied (After)</span>
-                        <pre className="text-[10px] truncate whitespace-pre-wrap">{JSON.stringify(log.newValues)}</pre>
+
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-950">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] uppercase font-bold text-emerald-700">Applied State (To Overwrite)</span>
+                          <span className="text-[10px] text-emerald-600 font-bold">STATE AFTER</span>
+                        </div>
+                        <pre className="text-[11px] overflow-x-auto max-h-24 whitespace-pre-wrap">
+                          {JSON.stringify(log.newValues, null, 2)}
+                        </pre>
                       </div>
                     </div>
                   </div>
 
-                  <div className="shrink-0 flex sm:flex-col justify-end">
-                    <button
-                      onClick={() => handleRollback(log)}
-                      disabled={processingId === log._id}
-                      className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-xs shadow flex items-center gap-1.5 transition disabled:opacity-50"
+                  <div className="flex lg:flex-col items-center justify-end gap-2 shrink-0 border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-100">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={Eye}
+                      onClick={() => setSelectedLogForDiff(log)}
                     >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      <span>{processingId === log._id ? 'Reverting...' : 'Rollback Mutation'}</span>
-                    </button>
+                      Full Diff
+                    </Button>
+                    <Button
+                      variant="warning"
+                      size="sm"
+                      icon={RotateCcw}
+                      loading={processingId === log._id}
+                      onClick={() => setConfirmRollbackLog(log)}
+                    >
+                      Rollback
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -259,53 +279,66 @@ export default function RecoveryConsole() {
         </div>
       )}
 
-      {/* TAB CONTENT 2: ROLLBACK HISTORY */}
+      {/* TAB 2: ROLLBACK HISTORY */}
       {activeTab === 'HISTORY' && (
-        <div className="card-surface p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-navy-900 flex items-center gap-2">
-              <History className="w-4 h-4 text-brand-blue" />
-              Rollback Execution History Ledger
-            </h2>
-            <span className="text-[11px] text-slate-400 font-mono">{recoveryHistory.length} Rollback Events</span>
+        <div className="card-surface p-0 overflow-hidden">
+          <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-navy-900">Rollback Execution History Ledger</h2>
+              <p className="text-xs text-slate-500">Forensic trail of all state restorations previously executed.</p>
+            </div>
+            <span className="text-xs font-mono text-slate-500">{recoveryHistory.length} events</span>
           </div>
 
           {loading ? (
-            <div className="py-12 text-center text-slate-400 text-xs">Loading rollback history...</div>
+            <div className="p-4">
+              <TableSkeleton rows={4} columns={5} />
+            </div>
           ) : recoveryHistory.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 text-xs">No rollback operations recorded yet.</div>
+            <EmptyState
+              icon={History}
+              title="No Rollback History"
+              description="No state restoration operations have been performed on this platform yet."
+            />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="app-table">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="py-3 px-3">Rollback Timestamp</th>
-                    <th className="py-3 px-3">Restored Entity</th>
-                    <th className="py-3 px-3">Reverted Action</th>
-                    <th className="py-3 px-3">Reverted By</th>
-                    <th className="py-3 px-3">Original Audit Ref</th>
+                  <tr>
+                    <th>Restoration Timestamp</th>
+                    <th>Restored Entity</th>
+                    <th>Reverted Action</th>
+                    <th>Authorized Admin</th>
+                    <th>Original Audit Ref</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-mono">
+                <tbody>
                   {recoveryHistory.map((item) => (
-                    <tr key={item._id} className="hover:bg-slate-50/50">
-                      <td className="py-3 px-3 text-slate-500 text-[11px] whitespace-nowrap">
+                    <tr key={item._id}>
+                      <td className="font-mono text-xs text-slate-600 whitespace-nowrap">
                         {new Date(item.createdAt).toLocaleString()}
                       </td>
-                      <td className="py-3 px-3">
+                      <td>
                         <span className="font-bold text-navy-900">{item.entityType}</span>
-                        <span className="block text-[10px] text-slate-400 truncate max-w-[120px]">{item.entityId}</span>
+                        <span className="block text-[11px] font-mono text-slate-400">ID: {item.entityId}</span>
                       </td>
-                      <td className="py-3 px-3">
-                        <span className="badge-warning text-[10px] font-bold">
-                          {item.metadata?.revertedAction || 'UNKNOWN'}
+                      <td>
+                        <Badge variant="warning">
+                          {item.metadata?.revertedAction || 'MUTATION_REVERT'}
+                        </Badge>
+                      </td>
+                      <td className="text-xs text-slate-700">
+                        <span className="font-semibold text-navy-900">{item.userId?.name || 'Admin'}</span>
+                        <span className="block text-[11px] text-slate-500 font-mono">
+                          {item.userId?.employeeId || 'SUPER_ADMIN'}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-slate-700">
-                        {item.userId?.name || 'Admin'} ({item.userId?.employeeId || 'ADMIN'})
-                      </td>
-                      <td className="py-3 px-3 text-slate-400 text-[10px] truncate max-w-[140px]">
-                        {item.metadata?.revertedAuditId || 'N/A'}
+                      <td className="font-mono text-[11px] text-slate-500">
+                        {item.metadata?.revertedAuditId ? (
+                          <span className="bg-slate-100 px-2 py-0.5 rounded">{item.metadata.revertedAuditId}</span>
+                        ) : (
+                          'N/A'
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -315,6 +348,80 @@ export default function RecoveryConsole() {
           )}
         </div>
       )}
+
+      {/* FULL DIFF MODAL */}
+      {selectedLogForDiff && (
+        <Modal
+          isOpen={!!selectedLogForDiff}
+          onClose={() => setSelectedLogForDiff(null)}
+          title={`State Snapshot Comparison — ${selectedLogForDiff.action}`}
+          subtitle={`Entity: ${selectedLogForDiff.entityType} (${selectedLogForDiff.entityId})`}
+          size="lg"
+        >
+          <div className="space-y-4">
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2 text-xs text-amber-800">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <span>
+                Rolling back this record will write the <strong>State Snapshot (Before)</strong> back to the active database table.
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <span className="text-xs font-bold text-red-700 uppercase tracking-wider block">
+                  Snapshot Before Mutation (Restorable)
+                </span>
+                <div className="bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-xs overflow-auto max-h-80">
+                  <pre>{JSON.stringify(selectedLogForDiff.oldValues, null, 2)}</pre>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider block">
+                  State After Mutation (Current)
+                </span>
+                <div className="bg-slate-900 text-slate-100 p-3 rounded-lg font-mono text-xs overflow-auto max-h-80">
+                  <pre>{JSON.stringify(selectedLogForDiff.newValues, null, 2)}</pre>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
+              <Button variant="secondary" onClick={() => setSelectedLogForDiff(null)}>
+                Close Preview
+              </Button>
+              <Button
+                variant="warning"
+                icon={RotateCcw}
+                onClick={() => {
+                  const target = selectedLogForDiff;
+                  setSelectedLogForDiff(null);
+                  setConfirmRollbackLog(target);
+                }}
+              >
+                Proceed to Rollback
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* CONFIRM ROLLBACK DIALOG */}
+      <ConfirmDialog
+        isOpen={!!confirmRollbackLog}
+        onClose={() => setConfirmRollbackLog(null)}
+        onConfirm={handleExecuteRollback}
+        title="Execute Database Rollback"
+        message={
+          confirmRollbackLog
+            ? `Are you sure you want to revert '${confirmRollbackLog.action}' on ${confirmRollbackLog.entityType} (ID: ${confirmRollbackLog.entityId})? The previous data snapshot will be restored into the active collection.`
+            : ''
+        }
+        confirmText="Confirm & Rollback"
+        cancelText="Cancel"
+        variant="warning"
+        loading={!!processingId}
+      />
     </div>
   );
 }

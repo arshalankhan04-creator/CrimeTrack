@@ -4,9 +4,6 @@ import {
   PlusCircle, 
   Search, 
   Filter, 
-  CheckCircle2, 
-  AlertCircle, 
-  X, 
   Edit3, 
   Trash2, 
   Eye, 
@@ -24,11 +21,24 @@ import {
   Clock, 
   ChevronRight,
   Layers,
-  ArrowRight
+  ArrowRight,
+  CheckCircle2,
+  RefreshCw,
+  Tag
 } from 'lucide-react';
 import investigationService from '../../services/investigationService';
 import caseService from '../../services/caseService';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+
+// Common UI Components
+import PageHeader from '../../components/common/PageHeader';
+import Button from '../../components/common/Button';
+import Badge from '../../components/common/Badge';
+import Modal from '../../components/common/Modal';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { FormField, Input, Select, Textarea } from '../../components/common/FormControls';
+import EmptyState from '../../components/common/EmptyState';
 
 const STAGES = [
   { id: 'INITIAL_EVALUATION', label: 'Initial Evaluation', step: 1 },
@@ -42,6 +52,7 @@ const EVIDENCE_TYPES = ['DOCUMENT', 'IMAGE', 'PHYSICAL', 'DIGITAL', 'WEAPON', 'O
 
 export default function Investigations() {
   const { user } = useAuth();
+  const toast = useToast();
   const isReadOnlyViewer = user?.role === 'VIEWER';
   const isAdmin = user?.role === 'ADMIN';
 
@@ -53,14 +64,16 @@ export default function Investigations() {
   // Timeline State
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
 
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAddEvidenceModalOpen, setIsAddEvidenceModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState(null);
+
+  // Delete Confirm Dialog
+  const [entryToDelete, setEntryToDelete] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // Form State: Create Entry
   const [entryForm, setEntryForm] = useState({
@@ -92,7 +105,7 @@ export default function Investigations() {
       }
     } catch (err) {
       console.error('Failed to fetch cases:', err);
-      setError(err.message || 'Error loading active cases.');
+      toast.error(err.message || 'Error loading active cases.');
     }
   };
 
@@ -100,14 +113,13 @@ export default function Investigations() {
   const fetchTimeline = async (caseId) => {
     if (!caseId) return;
     setLoading(true);
-    setError(null);
     try {
       const res = await investigationService.getCaseTimeline(caseId);
       setCurrentCase(res.data.case || null);
       setTimeline(res.data.timeline || []);
     } catch (err) {
       console.error('Failed to load timeline:', err);
-      setError(err.message || 'Failed to load investigation journal.');
+      toast.error(err.message || 'Failed to load investigation journal.');
     } finally {
       setLoading(false);
     }
@@ -128,7 +140,6 @@ export default function Investigations() {
     e.preventDefault();
     if (!selectedCaseId) return;
     setSubmitting(true);
-    setError(null);
     try {
       const evidence = [];
       if (entryForm.evidenceName.trim()) {
@@ -147,7 +158,7 @@ export default function Investigations() {
         evidence,
       });
 
-      setSuccessMsg('Investigation journal entry recorded.');
+      toast.success('Investigation journal entry recorded.');
       setIsCreateModalOpen(false);
       setEntryForm({
         title: '',
@@ -159,7 +170,7 @@ export default function Investigations() {
       });
       fetchTimeline(selectedCaseId);
     } catch (err) {
-      setError(err.message || 'Failed to record entry.');
+      toast.error(err.message || 'Failed to record entry.');
     } finally {
       setSubmitting(false);
     }
@@ -170,15 +181,14 @@ export default function Investigations() {
     e.preventDefault();
     if (!selectedEntry) return;
     setSubmitting(true);
-    setError(null);
     try {
       await investigationService.addEvidence(selectedEntry._id, evidenceForm);
-      setSuccessMsg('Evidence attached to investigation entry.');
+      toast.success('Evidence attached to investigation entry.');
       setIsAddEvidenceModalOpen(false);
       setEvidenceForm({ name: '', type: 'PHYSICAL', description: '' });
       fetchTimeline(selectedCaseId);
     } catch (err) {
-      setError(err.message || 'Failed to attach evidence.');
+      toast.error(err.message || 'Failed to attach evidence.');
     } finally {
       setSubmitting(false);
     }
@@ -189,33 +199,35 @@ export default function Investigations() {
     e.preventDefault();
     if (!selectedEntry) return;
     setSubmitting(true);
-    setError(null);
     try {
       await investigationService.updateInvestigation(selectedEntry._id, {
         title: entryForm.title,
         stage: entryForm.stage,
         notes: entryForm.notes,
       });
-      setSuccessMsg('Investigation entry updated.');
+      toast.success('Investigation entry updated.');
       setIsEditModalOpen(false);
       fetchTimeline(selectedCaseId);
     } catch (err) {
-      setError(err.message || 'Failed to update entry.');
+      toast.error(err.message || 'Failed to update entry.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Handle Delete Entry
-  const handleDeleteEntry = async (entryDoc) => {
-    const confirm = window.confirm(`Delete entry "${entryDoc.title}"? This action is logged.`);
-    if (!confirm) return;
+  // Confirm Delete Entry
+  const handleConfirmDelete = async () => {
+    if (!entryToDelete) return;
+    setConfirmLoading(true);
     try {
-      await investigationService.deleteInvestigation(entryDoc._id);
-      setSuccessMsg('Investigation entry removed.');
+      await investigationService.deleteInvestigation(entryToDelete._id);
+      toast.success('Investigation entry removed from journal.');
+      setEntryToDelete(null);
       fetchTimeline(selectedCaseId);
     } catch (err) {
-      setError(err.message || 'Failed to delete entry.');
+      toast.error(err.message || 'Failed to delete entry.');
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -234,74 +246,66 @@ export default function Investigations() {
     }
   };
 
-  const getStageBadge = (stage) => {
+  const renderStageBadge = (stage) => {
     switch (stage) {
       case 'INITIAL_EVALUATION':
-        return <span className="badge-info font-bold">1. Initial Evaluation</span>;
+        return <Badge variant="info">1. Initial Evaluation</Badge>;
       case 'EVIDENCE_COLLECTION':
-        return <span className="badge-warning font-bold">2. Evidence Collection</span>;
+        return <Badge variant="warning">2. Evidence Collection</Badge>;
       case 'INTERROGATION':
-        return <span className="text-[10px] bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded font-bold">3. Interrogation</span>;
+        return <Badge variant="purple">3. Interrogation</Badge>;
       case 'FORENSIC_ANALYSIS':
-        return <span className="text-[10px] bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-bold">4. Forensic Analysis</span>;
+        return <Badge variant="warning">4. Forensic Analysis</Badge>;
       case 'FINAL_REPORT':
-        return <span className="badge-success font-bold">5. Final Report</span>;
+        return <Badge variant="success">5. Final Report</Badge>;
       default:
-        return <span>{stage}</span>;
+        return <Badge variant="neutral">{stage}</Badge>;
     }
   };
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Header Banner */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="badge-info font-bold">CASE DIARY</span>
-            <span className="text-xs text-slate-500 font-mono">Forensic & Investigation Journal</span>
-          </div>
-          <h1 className="text-2xl font-bold text-navy-900 mt-2 tracking-tight">
-            Investigations & Chronological Timeline
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Log forensic findings, suspect interrogations, and evidence items in an immutable chronological journal.
-          </p>
-        </div>
-
-        {!isReadOnlyViewer && selectedCaseId && (
-          <button
-            onClick={() => {
-              setError(null);
-              setEntryForm({
-                title: '',
-                stage: 'EVIDENCE_COLLECTION',
-                notes: '',
-                evidenceName: '',
-                evidenceType: 'DOCUMENT',
-                evidenceDesc: '',
-              });
-              setIsCreateModalOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-blue hover:bg-brand-hoverBlue text-white font-semibold rounded-lg text-sm shadow transition shrink-0"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Log Investigation Entry</span>
-          </button>
-        )}
-      </div>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <PageHeader
+        title="Investigations & Case Journal"
+        subtitle="Log forensic findings, suspect interrogations, and evidence items in a chronological docket."
+        badge="INVESTIGATION JOURNAL"
+        actions={
+          !isReadOnlyViewer && selectedCaseId ? (
+            <Button
+              variant="primary"
+              size="sm"
+              icon={PlusCircle}
+              onClick={() => {
+                setEntryForm({
+                  title: '',
+                  stage: 'EVIDENCE_COLLECTION',
+                  notes: '',
+                  evidenceName: '',
+                  evidenceType: 'DOCUMENT',
+                  evidenceDesc: '',
+                });
+                setIsCreateModalOpen(true);
+              }}
+            >
+              Log Investigation Entry
+            </Button>
+          ) : null
+        }
+      />
 
       {/* Case Selector Bar */}
       <div className="card-surface p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <Briefcase className="w-5 h-5 text-brand-blue shrink-0" />
-          <span className="text-xs font-semibold text-slate-700 shrink-0">Active Case File:</span>
+          <span className="text-xs font-semibold text-slate-700 shrink-0">Select Case File:</span>
           {accessibleCases.length === 0 ? (
             <span className="text-xs text-slate-400">No active cases in scope</span>
           ) : (
             <select
               value={selectedCaseId}
               onChange={(e) => setSelectedCaseId(e.target.value)}
-              className="bg-slate-50 border border-slate-200 text-slate-900 text-xs font-mono font-bold rounded-lg px-3 py-2 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none flex-1 sm:w-96"
+              className="bg-slate-50 border border-slate-200 text-slate-900 text-xs font-mono font-bold rounded-lg px-3 py-2 focus:bg-white focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue outline-none flex-1 sm:w-96 transition"
             >
               {accessibleCases.map((c) => (
                 <option key={c._id} value={c._id}>
@@ -314,64 +318,54 @@ export default function Investigations() {
 
         {currentCase && (
           <div className="flex items-center gap-2 text-xs">
-            <span className="badge-info font-mono">{currentCase.caseNumber}</span>
-            <span className="text-slate-500 font-medium">Officer: {currentCase.assignedOfficerId?.name}</span>
+            <span className="font-mono font-bold text-navy-950 bg-navy-50 border border-brand-blue/20 px-2.5 py-1 rounded">
+              {currentCase.caseNumber}
+            </span>
+            <span className="text-slate-500 font-medium">
+              Lead: <strong>{currentCase.assignedOfficerId?.name || 'Unassigned'}</strong>
+            </span>
+            <Button
+              variant="ghost"
+              size="xs"
+              icon={RefreshCw}
+              onClick={() => fetchTimeline(selectedCaseId)}
+            >
+              Refresh
+            </Button>
           </div>
         )}
       </div>
-
-      {/* Notifications */}
-      {successMsg && (
-        <div className="p-4 bg-semantic-successBg border border-emerald-200 rounded-lg flex items-center justify-between text-emerald-800 text-sm">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-          <button onClick={() => setSuccessMsg(null)} className="text-emerald-600 hover:text-emerald-900">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 bg-semantic-dangerBg border border-red-200 rounded-lg flex items-center justify-between text-red-800 text-sm">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-            <span>{error}</span>
-          </div>
-          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-900">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
 
       {/* Case Stage Tracker Banner */}
       {currentCase && (
         <div className="card-surface p-5 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-400">
-              Investigation Lifecycle Progression
+            <h3 className="font-bold text-xs uppercase tracking-wider text-slate-500">
+              Investigation Lifecycle Stages
             </h3>
             <span className="text-xs font-mono text-brand-blue font-bold">
-              {timeline.length} Recorded Findings
+              {timeline.length} Recorded Entries
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
             {STAGES.map((s) => {
               const countInStage = timeline.filter((t) => t.stage === s.id).length;
+              const isPassed = countInStage > 0;
               return (
                 <div
                   key={s.id}
-                  className={`p-3 rounded-lg border text-center transition ${
-                    countInStage > 0
-                      ? 'bg-blue-50/70 border-brand-blue text-navy-900'
+                  className={`p-3 rounded-xl border text-center transition ${
+                    isPassed
+                      ? 'bg-brand-blue/5 border-brand-blue/30 text-navy-950'
                       : 'bg-slate-50 border-slate-200 text-slate-400'
                   }`}
                 >
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase">Step {s.step}</span>
+                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Step {s.step}</span>
                   <p className="font-bold text-xs mt-0.5">{s.label}</p>
-                  <span className="inline-block mt-1 text-[10px] font-mono px-1.5 py-0.2 bg-white rounded border border-slate-200 font-bold">
+                  <span className={`inline-block mt-1 text-[10px] font-mono px-2 py-0.5 rounded font-semibold ${
+                    isPassed ? 'bg-white text-brand-blue border border-brand-blue/20 shadow-xs' : 'bg-slate-100 text-slate-500'
+                  }`}>
                     {countInStage} logged
                   </span>
                 </div>
@@ -383,56 +377,69 @@ export default function Investigations() {
 
       {/* Chronological Investigation Timeline Feed */}
       <div className="card-surface p-6">
-        <h2 className="text-base font-bold text-navy-900 flex items-center gap-2 mb-6">
-          <FileSearch className="w-5 h-5 text-brand-blue" />
+        <h2 className="text-sm font-bold text-navy-950 flex items-center gap-2 mb-6">
+          <FileSearch className="w-4 h-4 text-brand-blue" />
           Chronological Investigation Dossier
         </h2>
 
         {loading ? (
-          <p className="text-slate-400 text-center py-8 text-xs">Loading case timeline...</p>
-        ) : timeline.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 text-xs space-y-2">
-            <p>No investigation entries recorded yet for this case.</p>
-            {!isReadOnlyViewer && (
-              <p className="text-slate-400">
-                Click <strong>"Log Investigation Entry"</strong> to record crime scene findings, forensics, or witness statements.
-              </p>
-            )}
+          <div className="space-y-4 py-6">
+            <div className="h-20 bg-slate-100 rounded-xl animate-pulse" />
+            <div className="h-20 bg-slate-100 rounded-xl animate-pulse" />
           </div>
+        ) : timeline.length === 0 ? (
+          <EmptyState
+            icon={FileSearch}
+            title="No Investigation Entries"
+            description="No journal entries recorded for this case file yet. Log crime scene findings, witness interviews, or forensic reports to track investigation progress."
+            action={
+              !isReadOnlyViewer && selectedCaseId ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={PlusCircle}
+                  onClick={() => setIsCreateModalOpen(true)}
+                >
+                  Log First Finding
+                </Button>
+              ) : null
+            }
+          />
         ) : (
           <div className="relative pl-6 space-y-8 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-            {timeline.map((entry, idx) => (
+            {timeline.map((entry) => (
               <div key={entry._id} className="relative group">
-                {/* Timeline Circle Marker */}
-                <div className="absolute -left-[30px] top-1.5 w-4 h-4 rounded-full bg-brand-blue border-4 border-white ring-2 ring-slate-200 shadow"></div>
+                {/* Marker */}
+                <div className="absolute -left-[30px] top-1.5 w-4 h-4 rounded-full bg-brand-blue border-4 border-white ring-2 ring-slate-200 shadow-sm" />
 
                 {/* Entry Card */}
                 <div className="bg-slate-50/80 border border-slate-200 rounded-xl p-5 hover:border-slate-300 transition text-xs space-y-3">
-                  {/* Entry Header */}
+                  {/* Header */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-sm text-navy-900">{entry.title}</span>
-                        {getStageBadge(entry.stage)}
+                        <span className="font-bold text-sm text-navy-950">{entry.title}</span>
+                        {renderStageBadge(entry.stage)}
                       </div>
                       <p className="text-[11px] text-slate-500">
-                        Recorded by <strong>{entry.officerId?.name}</strong> ({entry.officerId?.employeeId || 'Officer'}) • <Clock className="w-3 h-3 inline ml-1 mr-0.5" /> {new Date(entry.recordedAt).toLocaleString()}
+                        Recorded by <strong>{entry.officerId?.name || 'Officer'}</strong> ({entry.officerId?.employeeId || 'ID'}) • <Clock className="w-3 h-3 inline ml-1 mr-0.5" /> {new Date(entry.recordedAt).toLocaleString()}
                       </p>
                     </div>
 
                     <div className="flex items-center gap-1.5 self-end sm:self-auto">
                       {!isReadOnlyViewer && (
-                        <button
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          icon={Paperclip}
                           onClick={() => {
                             setSelectedEntry(entry);
                             setEvidenceForm({ name: '', type: 'PHYSICAL', description: '' });
                             setIsAddEvidenceModalOpen(true);
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-300 hover:bg-slate-100 rounded text-[11px] text-slate-700 font-semibold transition"
                         >
-                          <Paperclip className="w-3 h-3 text-brand-blue" />
-                          <span>Attach Evidence</span>
-                        </button>
+                          Attach Evidence
+                        </Button>
                       )}
 
                       {!isReadOnlyViewer && (
@@ -449,7 +456,7 @@ export default function Investigations() {
                             });
                             setIsEditModalOpen(true);
                           }}
-                          className="p-1 text-slate-400 hover:text-brand-blue rounded"
+                          className="p-1.5 text-slate-500 hover:text-brand-blue hover:bg-slate-200/60 rounded-lg transition"
                           title="Edit Entry"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -458,8 +465,8 @@ export default function Investigations() {
 
                       {!isReadOnlyViewer && (
                         <button
-                          onClick={() => handleDeleteEntry(entry)}
-                          className="p-1 text-slate-400 hover:text-red-600 rounded"
+                          onClick={() => setEntryToDelete(entry)}
+                          className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                           title="Delete Entry"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -468,12 +475,12 @@ export default function Investigations() {
                     </div>
                   </div>
 
-                  {/* Entry Findings Notes */}
-                  <div className="p-3.5 bg-white rounded-lg border border-slate-200 text-slate-800 leading-relaxed whitespace-pre-wrap">
+                  {/* Findings Notes */}
+                  <div className="p-3.5 bg-white rounded-lg border border-slate-200 text-slate-800 leading-relaxed whitespace-pre-wrap text-xs">
                     {entry.notes}
                   </div>
 
-                  {/* Attached Evidence Items */}
+                  {/* Attached Evidence */}
                   {entry.evidence && entry.evidence.length > 0 && (
                     <div className="pt-2 space-y-2">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
@@ -484,16 +491,16 @@ export default function Investigations() {
                         {entry.evidence.map((ev, evIdx) => (
                           <div
                             key={ev._id || evIdx}
-                            className="p-3 bg-white border border-slate-200 rounded-lg flex items-start gap-2.5"
+                            className="p-3 bg-white border border-slate-200 rounded-lg flex items-start gap-2.5 shadow-xs"
                           >
                             <div className="p-1.5 bg-slate-100 rounded shrink-0 mt-0.5">
                               {getEvidenceIcon(ev.type)}
                             </div>
                             <div className="space-y-0.5 overflow-hidden">
-                              <p className="font-bold text-navy-900 truncate">{ev.name}</p>
-                              <span className="text-[10px] text-brand-blue font-semibold">{ev.type}</span>
+                              <p className="font-bold text-navy-950 truncate text-xs">{ev.name}</p>
+                              <Badge variant="info">{ev.type}</Badge>
                               {ev.description && (
-                                <p className="text-[11px] text-slate-600 truncate">{ev.description}</p>
+                                <p className="text-[11px] text-slate-600 truncate mt-0.5">{ev.description}</p>
                               )}
                             </div>
                           </div>
@@ -509,273 +516,231 @@ export default function Investigations() {
       </div>
 
       {/* LOG INVESTIGATION ENTRY MODAL */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
-              <h3 className="font-bold text-base text-navy-900 flex items-center gap-2">
-                <PlusCircle className="w-4 h-4 text-brand-blue" />
-                Log Investigation Findings
-              </h3>
-              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Log Investigation Findings"
+        subtitle="Record crime scene notes, forensics, witness testimonies, or evidence"
+        size="lg"
+      >
+        <form onSubmit={handleCreateSubmit} className="space-y-4">
+          <FormField label="Journal Entry Title" required>
+            <Input
+              required
+              placeholder="e.g. Latent Fingerprint Match & Ballistics Review"
+              value={entryForm.title}
+              onChange={(e) => setEntryForm({ ...entryForm, title: e.target.value })}
+            />
+          </FormField>
 
-            <form onSubmit={handleCreateSubmit} className="p-6 space-y-4 text-xs overflow-y-auto">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Journal Entry Title *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Latent Fingerprint Match & Ballistics Review"
-                  value={entryForm.title}
-                  onChange={(e) => setEntryForm({ ...entryForm, title: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
+          <FormField label="Investigation Stage" required>
+            <Select
+              value={entryForm.stage}
+              onChange={(e) => setEntryForm({ ...entryForm, stage: e.target.value })}
+            >
+              {STAGES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.step}. {s.label}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+
+          <FormField label="Detailed Investigation Notes" required>
+            <Textarea
+              required
+              rows={4}
+              placeholder="Detail witness interview responses, crime scene reconstructions, forensic lab verdicts..."
+              value={entryForm.notes}
+              onChange={(e) => setEntryForm({ ...entryForm, notes: e.target.value })}
+            />
+          </FormField>
+
+          {/* Optional Initial Evidence */}
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+            <span className="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+              <Paperclip className="w-3.5 h-3.5 text-brand-blue" />
+              Initial Evidence Attachment (Optional)
+            </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="Evidence Name">
+                <Input
+                  placeholder="e.g. Spent 9mm shell casing"
+                  value={entryForm.evidenceName}
+                  onChange={(e) => setEntryForm({ ...entryForm, evidenceName: e.target.value })}
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Investigation Stage</label>
-                <select
-                  value={entryForm.stage}
-                  onChange={(e) => setEntryForm({ ...entryForm, stage: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none font-medium"
-                >
-                  {STAGES.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.step}. {s.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Detailed Investigation Notes *</label>
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Detail witness interview responses, crime scene reconstructions, forensic lab verdicts..."
-                  value={entryForm.notes}
-                  onChange={(e) => setEntryForm({ ...entryForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-              </div>
-
-              {/* Optional Initial Evidence Attachment */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-                <span className="font-bold text-slate-700 flex items-center gap-1.5">
-                  <Paperclip className="w-3.5 h-3.5 text-brand-blue" />
-                  Initial Evidence Attachment (Optional)
-                </span>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Evidence Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Spent 9mm shell casing"
-                      value={entryForm.evidenceName}
-                      onChange={(e) => setEntryForm({ ...entryForm, evidenceName: e.target.value })}
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-slate-900 outline-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Category</label>
-                    <select
-                      value={entryForm.evidenceType}
-                      onChange={(e) => setEntryForm({ ...entryForm, evidenceType: e.target.value })}
-                      className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-slate-900 outline-none"
-                    >
-                      {EVIDENCE_TYPES.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-semibold text-slate-600 mb-1">Description / Tag</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Recovered from kitchen floor, tag #EV-901"
-                    value={entryForm.evidenceDesc}
-                    onChange={(e) => setEntryForm({ ...entryForm, evidenceDesc: e.target.value })}
-                    className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded text-slate-900 outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 bg-brand-blue hover:bg-brand-hoverBlue text-white rounded-lg font-semibold shadow disabled:opacity-50"
-                >
-                  {submitting ? 'Recording...' : 'Record Finding'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* QUICK ATTACH EVIDENCE MODAL */}
-      {isAddEvidenceModalOpen && selectedEntry && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-base text-navy-900 flex items-center gap-2">
-                <Paperclip className="w-4 h-4 text-brand-blue" />
-                Attach Evidence to Entry
-              </h3>
-              <button onClick={() => setIsAddEvidenceModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleEvidenceSubmit} className="p-6 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Evidence Label / Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. CCTV Surveillance Footage MP4"
-                  value={evidenceForm.name}
-                  onChange={(e) => setEvidenceForm({ ...evidenceForm, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Evidence Classification</label>
-                <select
-                  value={evidenceForm.type}
-                  onChange={(e) => setEvidenceForm({ ...evidenceForm, type: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none font-medium"
+              <FormField label="Classification">
+                <Select
+                  value={entryForm.evidenceType}
+                  onChange={(e) => setEntryForm({ ...entryForm, evidenceType: e.target.value })}
                 >
                   {EVIDENCE_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
+                    <option key={t} value={t}>{t}</option>
                   ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Chain of Custody / Details</label>
-                <textarea
-                  rows={3}
-                  placeholder="Collected by forensics unit, secured in vault locker #4..."
-                  value={evidenceForm.description}
-                  onChange={(e) => setEvidenceForm({ ...evidenceForm, description: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddEvidenceModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 bg-brand-blue hover:bg-brand-hoverBlue text-white rounded-lg font-semibold shadow disabled:opacity-50"
-                >
-                  {submitting ? 'Attaching...' : 'Attach to Docket'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* EDIT ENTRY MODAL */}
-      {isEditModalOpen && selectedEntry && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 shrink-0">
-              <h3 className="font-bold text-base text-navy-900 flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-brand-blue" />
-                Edit Investigation Entry
-              </h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
+                </Select>
+              </FormField>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="p-6 space-y-4 text-xs overflow-y-auto">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={entryForm.title}
-                  onChange={(e) => setEntryForm({ ...entryForm, title: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Stage</label>
-                <select
-                  value={entryForm.stage}
-                  onChange={(e) => setEntryForm({ ...entryForm, stage: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none font-medium"
-                >
-                  {STAGES.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.step}. {s.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Investigation Notes *</label>
-                <textarea
-                  required
-                  rows={5}
-                  value={entryForm.notes}
-                  onChange={(e) => setEntryForm({ ...entryForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:bg-white focus:ring-2 focus:ring-brand-blue outline-none"
-                />
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-700 font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 bg-brand-blue hover:bg-brand-hoverBlue text-white rounded-lg font-semibold shadow disabled:opacity-50"
-                >
-                  {submitting ? 'Saving...' : 'Save Updates'}
-                </button>
-              </div>
-            </form>
+            <FormField label="Description / Custody Details">
+              <Input
+                placeholder="e.g. Recovered from kitchen floor, tag #EV-901"
+                value={entryForm.evidenceDesc}
+                onChange={(e) => setEntryForm({ ...entryForm, evidenceDesc: e.target.value })}
+              />
+            </FormField>
           </div>
-        </div>
-      )}
+
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={submitting}
+              icon={PlusCircle}
+            >
+              Record Finding
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* QUICK ATTACH EVIDENCE MODAL */}
+      <Modal
+        isOpen={isAddEvidenceModalOpen && !!selectedEntry}
+        onClose={() => setIsAddEvidenceModalOpen(false)}
+        title="Attach Evidence to Entry"
+        subtitle={`Linking item to: ${selectedEntry?.title}`}
+        size="md"
+      >
+        <form onSubmit={handleEvidenceSubmit} className="space-y-4">
+          <FormField label="Evidence Label / Name" required>
+            <Input
+              required
+              placeholder="e.g. CCTV Surveillance Footage MP4"
+              value={evidenceForm.name}
+              onChange={(e) => setEvidenceForm({ ...evidenceForm, name: e.target.value })}
+            />
+          </FormField>
+
+          <FormField label="Evidence Classification" required>
+            <Select
+              value={evidenceForm.type}
+              onChange={(e) => setEvidenceForm({ ...evidenceForm, type: e.target.value })}
+            >
+              {EVIDENCE_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </Select>
+          </FormField>
+
+          <FormField label="Chain of Custody / Description">
+            <Textarea
+              rows={3}
+              placeholder="Collected by forensics unit, secured in vault locker #4..."
+              value={evidenceForm.description}
+              onChange={(e) => setEvidenceForm({ ...evidenceForm, description: e.target.value })}
+            />
+          </FormField>
+
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAddEvidenceModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={submitting}
+              icon={Paperclip}
+            >
+              Attach to Docket
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* EDIT ENTRY MODAL */}
+      <Modal
+        isOpen={isEditModalOpen && !!selectedEntry}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Edit Investigation Entry"
+        subtitle="Update findings notes or stage designation"
+        size="lg"
+      >
+        <form onSubmit={handleEditSubmit} className="space-y-4">
+          <FormField label="Title" required>
+            <Input
+              required
+              value={entryForm.title}
+              onChange={(e) => setEntryForm({ ...entryForm, title: e.target.value })}
+            />
+          </FormField>
+
+          <FormField label="Stage" required>
+            <Select
+              value={entryForm.stage}
+              onChange={(e) => setEntryForm({ ...entryForm, stage: e.target.value })}
+            >
+              {STAGES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.step}. {s.label}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+
+          <FormField label="Investigation Notes" required>
+            <Textarea
+              required
+              rows={5}
+              value={entryForm.notes}
+              onChange={(e) => setEntryForm({ ...entryForm, notes: e.target.value })}
+            />
+          </FormField>
+
+          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsEditModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={submitting}
+            >
+              Save Updates
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* CONFIRM DELETE DIALOG */}
+      <ConfirmDialog
+        isOpen={!!entryToDelete}
+        onClose={() => setEntryToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Investigation Entry"
+        message={`Are you sure you want to delete "${entryToDelete?.title}"? This forensic entry and all its attached evidence links will be permanently removed. This action is audited.`}
+        confirmText="Delete Entry"
+        confirmVariant="danger"
+        loading={confirmLoading}
+      />
     </div>
   );
 }
+

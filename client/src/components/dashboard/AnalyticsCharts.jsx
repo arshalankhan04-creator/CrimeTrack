@@ -1,41 +1,31 @@
 import React from 'react';
 import { 
-  BarChart3, 
   PieChart, 
   TrendingUp, 
   Activity, 
-  CheckCircle2, 
   AlertTriangle, 
-  Shield, 
-  Clock, 
   Layers
 } from 'lucide-react';
+import Card from '../common/Card';
 
 const CATEGORY_COLORS = {
-  BURGLARY: 'bg-amber-500 text-amber-500',
-  THEFT: 'bg-blue-500 text-blue-500',
-  CYBERCRIME: 'bg-purple-500 text-purple-500',
-  ROBBERY: 'bg-red-500 text-red-500',
-  ASSAULT: 'bg-orange-500 text-orange-500',
-  MURDER: 'bg-rose-700 text-rose-700',
-  HOMICIDE: 'bg-rose-600 text-rose-600',
-  FRAUD: 'bg-emerald-500 text-emerald-500',
-  EXTORTION: 'bg-indigo-500 text-indigo-500',
-  OTHER: 'bg-slate-500 text-slate-500',
+  BURGLARY: { bar: 'bg-amber-500', dot: 'bg-amber-500' },
+  THEFT: { bar: 'bg-blue-500', dot: 'bg-blue-500' },
+  CYBERCRIME: { bar: 'bg-purple-500', dot: 'bg-purple-500' },
+  ROBBERY: { bar: 'bg-orange-500', dot: 'bg-orange-500' },
+  ASSAULT: { bar: 'bg-rose-500', dot: 'bg-rose-500' },
+  MURDER: { bar: 'bg-red-700', dot: 'bg-red-700' },
+  HOMICIDE: { bar: 'bg-red-600', dot: 'bg-red-600' },
+  FRAUD: { bar: 'bg-indigo-500', dot: 'bg-indigo-500' },
+  EXTORTION: { bar: 'bg-teal-500', dot: 'bg-teal-500' },
+  OTHER: { bar: 'bg-slate-400', dot: 'bg-slate-400' },
 };
 
-const STATUS_COLORS = {
-  OPEN: 'bg-blue-500',
-  UNDER_INVESTIGATION: 'bg-amber-500',
-  SOLVED: 'bg-emerald-500',
-  CLOSED: 'bg-slate-600',
-};
-
-const PRIORITY_COLORS = {
-  CRITICAL: 'bg-red-500',
-  HIGH: 'bg-amber-500',
-  MEDIUM: 'bg-blue-500',
-  LOW: 'bg-slate-400',
+const STATUS_CONFIG = {
+  OPEN: { label: 'Open Cases', bar: 'bg-blue-500', text: 'text-blue-700' },
+  UNDER_INVESTIGATION: { label: 'Under Active Investigation', bar: 'bg-amber-500', text: 'text-amber-700' },
+  SOLVED: { label: 'Solved Cases', bar: 'bg-emerald-500', text: 'text-emerald-700' },
+  CLOSED: { label: 'Closed / Archived', bar: 'bg-slate-500', text: 'text-slate-700' },
 };
 
 export default function AnalyticsCharts({ charts, stats }) {
@@ -53,124 +43,112 @@ export default function AnalyticsCharts({ charts, stats }) {
     <div className="space-y-6 font-sans">
       {/* 2-Column Primary Analytics Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
         {/* Crime Category Distribution Card */}
-        <div className="card-surface p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-navy-900 flex items-center gap-2">
-              <PieChart className="w-4 h-4 text-brand-blue" />
-              Crime Incident Category Breakdown
-            </h3>
-            <span className="text-[11px] text-slate-400 font-semibold">{totalCrimeCount} Total Incidents</span>
-          </div>
-
+        <Card
+          title="Incident Category Breakdown"
+          subtitle={`${totalCrimeCount} Total Classified Records`}
+          icon={PieChart}
+        >
           {crimeTypes.length === 0 ? (
-            <p className="text-slate-400 text-xs py-8 text-center">No crime category data logged.</p>
+            <p className="text-slate-400 text-xs py-8 text-center">No crime incident category data available.</p>
           ) : (
-            <div className="space-y-3 pt-2">
+            <div className="space-y-3 pt-1">
               {crimeTypes.map((item) => {
                 const percentage = Math.round((item.count / totalCrimeCount) * 100);
-                const colorClass = CATEGORY_COLORS[item.type] || 'bg-brand-blue text-brand-blue';
+                const scheme = CATEGORY_COLORS[item.type] || { bar: 'bg-brand-blue', dot: 'bg-brand-blue' };
 
                 return (
                   <div key={item.type} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="text-slate-700 flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full ${colorClass.split(' ')[0]}`}></span>
+                    <div className="flex items-center justify-between text-xs font-medium">
+                      <span className="text-slate-700 flex items-center gap-1.5 font-semibold">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${scheme.dot}`} />
                         {item.type}
                       </span>
-                      <span className="text-slate-500 font-mono">
-                        {item.count} ({percentage}%)
+                      <span className="text-slate-500 font-mono text-[11px]">
+                        {item.count} <span className="text-slate-400">({percentage}%)</span>
                       </span>
                     </div>
                     <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                       <div
-                        className={`h-2 rounded-full transition-all duration-500 ${colorClass.split(' ')[0]}`}
+                        className={`h-2 rounded-full transition-all duration-500 ${scheme.bar}`}
                         style={{ width: `${percentage}%` }}
-                      ></div>
+                      />
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
-        </div>
+        </Card>
 
-        {/* Case Status Lifecycle Pipeline Card */}
-        <div className="card-surface p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-navy-900 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-600" />
-              Case Investigation Resolution Pipeline
-            </h3>
-            <span className="badge-success font-bold font-mono">
-              {stats?.resolutionRate || 0}% Resolution Rate
+        {/* Case Status Resolution Pipeline Card */}
+        <Card
+          title="Case Investigation Lifecycle"
+          subtitle={`${stats?.resolutionRate || 0}% Overall Case Resolution Rate`}
+          icon={Activity}
+          action={
+            <span className="text-xs font-bold font-mono px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+              {stats?.resolutionRate || 0}% Solved
             </span>
-          </div>
-
-          {/* Lifecycle Status Progress Bars */}
-          <div className="space-y-3 pt-2">
-            {[
-              { label: 'Open Case Files', key: 'OPEN', color: STATUS_COLORS.OPEN },
-              { label: 'Under Active Investigation', key: 'UNDER_INVESTIGATION', color: STATUS_COLORS.UNDER_INVESTIGATION },
-              { label: 'Solved Cases', key: 'SOLVED', color: STATUS_COLORS.SOLVED },
-              { label: 'Closed / Archived', key: 'CLOSED', color: STATUS_COLORS.CLOSED },
-            ].map((st) => {
-              const count = statusDistribution.find((s) => s.status === st.key)?.count || 0;
+          }
+        >
+          <div className="space-y-3 pt-1">
+            {['OPEN', 'UNDER_INVESTIGATION', 'SOLVED', 'CLOSED'].map((stKey) => {
+              const cfg = STATUS_CONFIG[stKey];
+              const count = statusDistribution.find((s) => s.status === stKey)?.count || 0;
               const percentage = Math.round((count / totalCaseCount) * 100);
 
               return (
-                <div key={st.key} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-slate-700 flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${st.color}`}></span>
-                      {st.label}
+                <div key={stKey} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs font-medium">
+                    <span className="text-slate-700 flex items-center gap-1.5 font-semibold">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.bar}`} />
+                      {cfg.label}
                     </span>
-                    <span className="text-slate-500 font-mono">
-                      {count} ({percentage}%)
+                    <span className="text-slate-500 font-mono text-[11px]">
+                      {count} <span className="text-slate-400">({percentage}%)</span>
                     </span>
                   </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                     <div
-                      className={`h-2.5 rounded-full transition-all duration-500 ${st.color}`}
+                      className={`h-2 rounded-full transition-all duration-500 ${cfg.bar}`}
                       style={{ width: `${percentage}%` }}
-                    ></div>
+                    />
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Resolution Metric Box */}
+          {/* Quick Resolution Metrics Strip */}
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-3 gap-2 text-center text-xs mt-4">
             <div>
               <span className="text-[10px] uppercase font-bold text-slate-400">Total Cases</span>
-              <p className="font-bold text-navy-900 text-sm mt-0.5">{stats?.totalCases || 0}</p>
+              <p className="font-bold text-navy-900 text-sm mt-0.5 font-mono">{stats?.totalCases || 0}</p>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400">Active Caseload</span>
-              <p className="font-bold text-amber-600 text-sm mt-0.5">{stats?.activeCaseload || 0}</p>
+              <span className="text-[10px] uppercase font-bold text-slate-400">Active Dossiers</span>
+              <p className="font-bold text-amber-600 text-sm mt-0.5 font-mono">{stats?.activeCaseload || 0}</p>
             </div>
             <div>
-              <span className="text-[10px] uppercase font-bold text-slate-400">Solved/Closed</span>
-              <p className="font-bold text-emerald-600 text-sm mt-0.5">{stats?.resolvedCases || 0}</p>
+              <span className="text-[10px] uppercase font-bold text-slate-400">Solved / Closed</span>
+              <p className="font-bold text-emerald-600 text-sm mt-0.5 font-mono">{stats?.resolvedCases || 0}</p>
             </div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* 2-Column Secondary Analytics Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Case Priority Level Distribution */}
-        <div className="card-surface p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-navy-900 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-500" />
-              Caseload Priority Split
-            </h3>
-            <span className="text-[11px] text-slate-400 font-semibold">{totalPriorityCount} Categorized Cases</span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+        
+        {/* Priority Severity Breakdown */}
+        <Card
+          title="Caseload Priority Distribution"
+          subtitle={`${totalPriorityCount} Categorized Cases`}
+          icon={AlertTriangle}
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
             {[
               { label: 'Critical', key: 'CRITICAL', bg: 'bg-red-50 text-red-700 border-red-200' },
               { label: 'High', key: 'HIGH', bg: 'bg-amber-50 text-amber-700 border-amber-200' },
@@ -181,43 +159,39 @@ export default function AnalyticsCharts({ charts, stats }) {
               const percentage = Math.round((count / totalPriorityCount) * 100);
 
               return (
-                <div key={p.key} className={`p-3.5 rounded-xl border ${p.bg} text-center`}>
+                <div key={p.key} className={`p-3 rounded-xl border ${p.bg} text-center`}>
                   <span className="block text-[10px] font-bold uppercase tracking-wider">{p.label}</span>
                   <p className="text-xl font-bold mt-1 font-mono">{count}</p>
-                  <span className="text-[10px] opacity-75 font-semibold">{percentage}% of cases</span>
+                  <span className="text-[10px] opacity-80 font-medium">{percentage}%</span>
                 </div>
               );
             })}
           </div>
-        </div>
+        </Card>
 
         {/* Monthly Incident Volume Trend */}
-        <div className="card-surface p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-sm text-navy-900 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-brand-blue" />
-              Monthly Incident Trend (Past 6 Months)
-            </h3>
-            <span className="text-[11px] text-slate-400 font-semibold">Incident Volume</span>
-          </div>
-
+        <Card
+          title="Monthly Incident Registration Trend"
+          subtitle="Past 6 months incident logs"
+          icon={TrendingUp}
+        >
           {monthlyTrends.length === 0 ? (
             <div className="py-8 text-center text-slate-400 text-xs">
-              Recent monthly incident trends will populate automatically as FIRs are registered.
+              Incident trends will display here as FIRs are recorded across monthly cycles.
             </div>
           ) : (
-            <div className="flex items-end justify-between gap-3 h-36 pt-4 px-2">
+            <div className="flex items-end justify-between gap-3 h-32 pt-2 px-1">
               {monthlyTrends.map((m) => {
-                const heightPercent = Math.max(Math.round((m.count / maxMonthlyCount) * 100), 15);
+                const heightPercent = Math.max(Math.round((m.count / maxMonthlyCount) * 100), 12);
                 return (
-                  <div key={m.period} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
+                  <div key={m.period} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
                     <span className="text-[10px] font-bold text-navy-900 font-mono">{m.count}</span>
                     <div
-                      className="w-full max-w-[36px] bg-brand-blue/80 hover:bg-brand-blue rounded-t-md transition-all duration-500 shadow-sm"
+                      className="w-full max-w-[32px] bg-brand-blue/85 hover:bg-brand-blue rounded-t-md transition-all duration-300 shadow-xs"
                       style={{ height: `${heightPercent}%` }}
                       title={`${m.period}: ${m.count} registered incidents`}
-                    ></div>
-                    <span className="text-[10px] text-slate-500 font-semibold truncate w-full text-center">
+                    />
+                    <span className="text-[10px] text-slate-500 font-medium truncate w-full text-center">
                       {m.period.split(' ')[0]}
                     </span>
                   </div>
@@ -225,7 +199,7 @@ export default function AnalyticsCharts({ charts, stats }) {
               })}
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

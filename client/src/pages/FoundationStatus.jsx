@@ -17,29 +17,45 @@ import {
   Shield,
   Activity,
   Zap,
-  Lock
+  Lock,
+  Radio
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import PageHeader from '../components/common/PageHeader';
+import StatCard from '../components/common/StatCard';
+import Badge from '../components/common/Badge';
+import Button from '../components/common/Button';
+import Card from '../components/common/Card';
+import ErrorState from '../components/common/ErrorState';
 
 export default function FoundationStatus() {
   const { user, isAuthenticated } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [healthData, setHealthData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastChecked, setLastChecked] = useState(null);
 
-  const fetchHealth = async () => {
+  const fetchHealth = async (isManual = false) => {
     setLoading(true);
     setError(null);
     try {
       const res = await api.get('/health');
       setHealthData(res);
       setLastChecked(new Date().toLocaleTimeString());
+      if (isManual) {
+        showSuccess('Station telemetry and health checks refreshed.');
+      }
     } catch (err) {
       console.error('Health check failed:', err);
-      setError(err.message || 'Failed to connect to backend server.');
+      const msg = err.message || 'Failed to connect to backend server.';
+      setError(msg);
+      if (isManual) {
+        showError(msg);
+      }
       setLastChecked(new Date().toLocaleTimeString());
     } finally {
       setLoading(false);
@@ -47,7 +63,7 @@ export default function FoundationStatus() {
   };
 
   useEffect(() => {
-    fetchHealth();
+    fetchHealth(false);
   }, []);
 
   const isDbConnected = healthData?.data?.database?.isConnected;
@@ -98,35 +114,34 @@ export default function FoundationStatus() {
   ];
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="badge-success font-bold flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> SYSTEM ACTIVE
-            </span>
-            <span className="text-xs text-slate-500 font-mono">Central Law Enforcement Command</span>
-          </div>
-          <h1 className="text-2xl font-bold text-navy-900 mt-2 tracking-tight flex items-center gap-2">
-            CrimeTrack Station Command Overview
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Enterprise Police Crime & Case Management System — Real-time telemetry, operational registries, and forensic auditing.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={fetchHealth}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-xs transition border border-slate-300 disabled:opacity-50"
+      <PageHeader
+        title="CrimeTrack Station Command Overview"
+        description="Central Law Enforcement Command — Real-time telemetry, operational registries, subsystem integrity, and forensic audit pipelines."
+        breadcrumbs={[
+          { label: 'Overview', path: '/' },
+          { label: 'System Health & Registries' },
+        ]}
+        actions={
+          <Button
+            variant="secondary"
+            icon={RefreshCw}
+            loading={loading}
+            onClick={() => fetchHealth(true)}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh Health Status</span>
-          </button>
-        </div>
-      </div>
+            {lastChecked ? `Checked ${lastChecked}` : 'Refresh Health'}
+          </Button>
+        }
+      />
+
+      {error && (
+        <ErrorState
+          title="Telemetry Connection Issue"
+          message={error}
+          onRetry={fetchHealth}
+        />
+      )}
 
       {/* Main Connection Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -140,22 +155,22 @@ export default function FoundationStatus() {
               <Server className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
+          <div className="mt-3 flex items-baseline gap-2">
             {!error && healthData ? (
-              <span className="badge-success">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                ONLINE (200 OK)
-              </span>
+              <Badge variant="success">ONLINE (200 OK)</Badge>
             ) : (
-              <span className="badge-danger">
-                <XCircle className="w-3.5 h-3.5" />
-                OFFLINE
-              </span>
+              <Badge variant="danger">OFFLINE</Badge>
             )}
           </div>
-          <div className="mt-2 text-[11px] text-slate-500 space-y-0.5">
-            <p><strong>Uptime:</strong> {healthData?.data?.uptime || 'Active'}</p>
-            <p><strong>Environment:</strong> Production Mode</p>
+          <div className="mt-3 text-xs text-slate-500 space-y-1">
+            <p className="flex justify-between">
+              <span className="text-slate-400">Uptime:</span>
+              <span className="font-mono text-slate-700">{healthData?.data?.uptime || 'Active'}</span>
+            </p>
+            <p className="flex justify-between">
+              <span className="text-slate-400">Environment:</span>
+              <span className="font-mono text-slate-700">Production Mode</span>
+            </p>
           </div>
         </div>
 
@@ -169,22 +184,22 @@ export default function FoundationStatus() {
               <Database className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
+          <div className="mt-3 flex items-baseline gap-2">
             {isDbConnected ? (
-              <span className="badge-success">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                CONNECTED
-              </span>
+              <Badge variant="success">CONNECTED</Badge>
             ) : (
-              <span className="badge-warning">
-                <XCircle className="w-3.5 h-3.5" />
-                RETRYING
-              </span>
+              <Badge variant="warning">RETRYING</Badge>
             )}
           </div>
-          <div className="mt-2 text-[11px] text-slate-500 space-y-0.5">
-            <p><strong>Cluster:</strong> MongoDB 127.0.0.1</p>
-            <p><strong>Database:</strong> crimetrack</p>
+          <div className="mt-3 text-xs text-slate-500 space-y-1">
+            <p className="flex justify-between">
+              <span className="text-slate-400">Cluster:</span>
+              <span className="font-mono text-slate-700">MongoDB 127.0.0.1</span>
+            </p>
+            <p className="flex justify-between">
+              <span className="text-slate-400">Database:</span>
+              <span className="font-mono text-slate-700">crimetrack</span>
+            </p>
           </div>
         </div>
 
@@ -198,15 +213,18 @@ export default function FoundationStatus() {
               <Lock className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="badge-success">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              RBAC ENFORCED
-            </span>
+          <div className="mt-3 flex items-baseline gap-2">
+            <Badge variant="primary">RBAC ENFORCED</Badge>
           </div>
-          <div className="mt-2 text-[11px] text-slate-500 space-y-0.5">
-            <p><strong>Auth:</strong> JWT Bearer + bcrypt</p>
-            <p><strong>Roles:</strong> Admin / Officer / Viewer</p>
+          <div className="mt-3 text-xs text-slate-500 space-y-1">
+            <p className="flex justify-between">
+              <span className="text-slate-400">Auth Engine:</span>
+              <span className="font-mono text-slate-700">JWT + bcrypt</span>
+            </p>
+            <p className="flex justify-between">
+              <span className="text-slate-400">Active Roles:</span>
+              <span className="font-mono text-slate-700">Admin / Officer / Viewer</span>
+            </p>
           </div>
         </div>
 
@@ -220,15 +238,18 @@ export default function FoundationStatus() {
               <Shield className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="badge-success">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              IMMUTABLE LOGS
-            </span>
+          <div className="mt-3 flex items-baseline gap-2">
+            <Badge variant="success">IMMUTABLE LOGS</Badge>
           </div>
-          <div className="mt-2 text-[11px] text-slate-500 space-y-0.5">
-            <p><strong>Audit Diff:</strong> Active</p>
-            <p><strong>Undo Engine:</strong> State-Aware</p>
+          <div className="mt-3 text-xs text-slate-500 space-y-1">
+            <p className="flex justify-between">
+              <span className="text-slate-400">Audit Diff:</span>
+              <span className="font-mono text-slate-700">Active</span>
+            </p>
+            <p className="flex justify-between">
+              <span className="text-slate-400">Undo Engine:</span>
+              <span className="font-mono text-slate-700">State-Aware</span>
+            </p>
           </div>
         </div>
       </div>
@@ -242,7 +263,7 @@ export default function FoundationStatus() {
               Operational Modules & Registries
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Access core station services for FIR complaints, investigation journals, evidence files, and report generation.
+              Direct access to core station registries for FIR complaints, case dossiers, evidence lockers, and report analytics.
             </p>
           </div>
         </div>
@@ -263,13 +284,13 @@ export default function FoundationStatus() {
                   <h3 className="font-bold text-xs text-navy-900 mt-3 group-hover:text-brand-blue transition">
                     {m.title}
                   </h3>
-                  <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                     {m.desc}
                   </p>
                 </div>
-                <div className="mt-3 flex items-center gap-1 text-xs font-bold text-brand-blue group-hover:translate-x-1 transition-transform">
+                <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-brand-blue group-hover:text-brand-hoverBlue transition">
                   <span>Open Registry</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Link>
             );
@@ -279,3 +300,4 @@ export default function FoundationStatus() {
     </div>
   );
 }
+

@@ -13,16 +13,27 @@ import {
   ShieldCheck, 
   X, 
   RefreshCw, 
-  ChevronLeft, 
-  ChevronRight,
   MessageCircle,
   ThumbsUp,
   Tag,
-  Send
+  Send,
+  SlidersHorizontal,
+  CheckCircle
 } from 'lucide-react';
 import feedbackService from '../../services/feedbackService';
 import caseService from '../../services/caseService';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import PageHeader from '../../components/common/PageHeader';
+import StatCard from '../../components/common/StatCard';
+import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
+import Modal from '../../components/common/Modal';
+import { FormField, Input, Select, Textarea } from '../../components/common/FormControls';
+import Pagination from '../../components/common/Pagination';
+import { ListSkeleton } from '../../components/common/Skeletons';
+import EmptyState from '../../components/common/EmptyState';
+import ErrorState from '../../components/common/ErrorState';
 
 const FEEDBACK_TYPES = [
   { value: 'SYSTEM_FEEDBACK', label: 'System Experience' },
@@ -43,6 +54,7 @@ const CATEGORIES = [
 
 export default function Feedback() {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const isAdmin = user?.role === 'ADMIN';
 
   // Filter States
@@ -59,7 +71,6 @@ export default function Feedback() {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
 
   // Modal States
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
@@ -138,13 +149,12 @@ export default function Feedback() {
   const handleSubmitFeedback = async (e) => {
     e.preventDefault();
     setSubmitting(true);
-    setError(null);
     try {
       await feedbackService.createFeedback({
         ...formData,
         relatedCaseId: formData.relatedCaseId || undefined,
       });
-      setSuccessMsg('Feedback submitted successfully. Thank you for your contribution.');
+      showSuccess('Feedback submitted successfully. Thank you for your contribution.');
       setIsSubmitModalOpen(false);
       setFormData({
         feedbackType: 'SYSTEM_FEEDBACK',
@@ -157,7 +167,7 @@ export default function Feedback() {
       });
       fetchFeedbacks(1);
     } catch (err) {
-      setError(err.message || 'Failed to submit feedback.');
+      showError(err.message || 'Failed to submit feedback.');
     } finally {
       setSubmitting(false);
     }
@@ -167,14 +177,13 @@ export default function Feedback() {
     e.preventDefault();
     if (!selectedFeedback) return;
     setTriaging(true);
-    setError(null);
     try {
       await feedbackService.triageFeedback(selectedFeedback._id, triageData);
-      setSuccessMsg('Feedback triaged and response updated successfully.');
+      showSuccess('Feedback triaged and response recorded successfully.');
       setIsTriageModalOpen(false);
       fetchFeedbacks(page);
     } catch (err) {
-      setError(err.message || 'Failed to update feedback triage.');
+      showError(err.message || 'Failed to update feedback triage.');
     } finally {
       setTriaging(false);
     }
@@ -190,244 +199,179 @@ export default function Feedback() {
     setIsTriageModalOpen(true);
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'PENDING':
-        return <span className="badge-warning font-mono font-bold text-[10px]">PENDING</span>;
-      case 'IN_REVIEW':
-        return <span className="badge-info font-mono font-bold text-[10px]">IN_REVIEW</span>;
-      case 'RESOLVED':
-        return <span className="badge-success font-mono font-bold text-[10px]">RESOLVED</span>;
-      case 'REJECTED':
-        return <span className="badge-danger font-mono font-bold text-[10px]">REJECTED</span>;
-      default:
-        return <span className="badge-info font-mono text-[10px]">{status}</span>;
-    }
-  };
-
-  const getPriorityBadge = (priority) => {
-    switch (priority) {
-      case 'CRITICAL':
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">CRITICAL</span>;
-      case 'HIGH':
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">HIGH</span>;
-      case 'MEDIUM':
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">MEDIUM</span>;
-      default:
-        return <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">LOW</span>;
-    }
-  };
-
   return (
-    <div className="space-y-6 font-sans">
-      {/* Header Banner */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+    <div className="space-y-6">
+      {/* Header */}
+      <PageHeader
+        title="Feedback & Issue Reporting Hub"
+        description="Submit bug reports, feature requests, and officer satisfaction ratings with station administration triage management."
+        breadcrumbs={[
+          { label: 'Overview', path: '/' },
+          { label: 'Feedback & Support' },
+        ]}
+        actions={
           <div className="flex items-center gap-2">
-            <span className="badge-info font-bold">COMMUNITY & OPERATIONS</span>
-            <span className="text-xs text-slate-500 font-mono">Satisfaction & Issue Tracker</span>
+            <Button
+              variant="secondary"
+              icon={RefreshCw}
+              loading={loading}
+              onClick={() => fetchFeedbacks(page)}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => setIsSubmitModalOpen(true)}
+            >
+              Submit Feedback
+            </Button>
           </div>
-          <h1 className="text-2xl font-bold text-navy-900 mt-2 tracking-tight flex items-center gap-2">
-            <MessageSquare className="w-6 h-6 text-brand-blue" />
-            Feedback & Issue Reporting Hub
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Submit bug reports, feature requests, and officer satisfaction ratings with station triage management.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => setIsSubmitModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand-blue hover:bg-brand-hoverBlue text-white font-semibold rounded-lg text-xs shadow transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Submit Feedback</span>
-          </button>
-
-          <button
-            onClick={() => fetchFeedbacks(page)}
-            disabled={loading}
-            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg border transition"
-            title="Refresh"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* Notifications */}
-      {successMsg && (
-        <div className="p-4 bg-semantic-successBg border border-emerald-200 rounded-lg flex items-center justify-between text-emerald-800 text-xs">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-          <button onClick={() => setSuccessMsg(null)} className="text-emerald-600 hover:text-emerald-900 font-bold">
-            ✕
-          </button>
-        </div>
-      )}
+        }
+      />
 
       {error && (
-        <div className="p-4 bg-semantic-dangerBg border border-red-200 rounded-lg flex items-center justify-between text-red-800 text-xs">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
-            <span>{error}</span>
-          </div>
-          <button onClick={() => setError(null)} className="text-red-600 hover:text-red-900 font-bold">
-            ✕
-          </button>
-        </div>
+        <ErrorState
+          title="Feedback Stream Error"
+          message={error}
+          onRetry={() => fetchFeedbacks(page)}
+        />
       )}
 
       {/* KPI Overview Cards */}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="card-surface p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase text-slate-400">Total Submissions</span>
-              <MessageCircle className="w-4 h-4 text-brand-blue" />
-            </div>
-            <p className="text-2xl font-bold text-navy-900 mt-2 font-mono">{stats.totalCount}</p>
-            <span className="text-[10px] text-slate-500 font-semibold">Logged across station</span>
-          </div>
-
-          <div className="card-surface p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase text-slate-400">Pending Triage</span>
-              <Clock className="w-4 h-4 text-amber-500" />
-            </div>
-            <p className="text-2xl font-bold text-amber-600 mt-2 font-mono">{stats.pendingCount}</p>
-            <span className="text-[10px] text-amber-700 font-semibold">Awaiting review</span>
-          </div>
-
-          <div className="card-surface p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase text-slate-400">Resolved Issues</span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            </div>
-            <p className="text-2xl font-bold text-emerald-600 mt-2 font-mono">{stats.resolvedCount}</p>
-            <span className="text-[10px] text-emerald-700 font-semibold">Addressed by admin</span>
-          </div>
-
-          <div className="card-surface p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase text-slate-400">Satisfaction Score</span>
-              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-            </div>
-            <p className="text-2xl font-bold text-navy-900 mt-2 font-mono flex items-center gap-1">
-              {stats.avgRating} <span className="text-xs text-slate-400 font-sans">/ 5.0</span>
-            </p>
-            <span className="text-[10px] text-slate-500 font-semibold">Average rating</span>
-          </div>
+          <StatCard
+            title="Total Submissions"
+            value={stats.totalCount}
+            subtitle="Logged across station"
+            icon={MessageCircle}
+            variant="primary"
+          />
+          <StatCard
+            title="Pending Triage"
+            value={stats.pendingCount}
+            subtitle="Awaiting review"
+            icon={Clock}
+            variant="warning"
+          />
+          <StatCard
+            title="Resolved Issues"
+            value={stats.resolvedCount}
+            subtitle="Addressed by admin"
+            icon={CheckCircle2}
+            variant="success"
+          />
+          <StatCard
+            title="Satisfaction Score"
+            value={`${stats.avgRating || 0} / 5.0`}
+            subtitle="Average officer rating"
+            icon={Star}
+            variant="neutral"
+          />
         </div>
       )}
 
       {/* Filter Toolbar */}
-      <div className="card-surface p-5 space-y-3">
-        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-600 mb-1">Search Keywords</label>
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search subject or notes..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-brand-blue"
-              />
-            </div>
-          </div>
+      <div className="card-surface p-4">
+        <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <FormField label="Search Keywords">
+            <Input
+              placeholder="Search subject or notes..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </FormField>
 
-          <div>
-            <label className="block font-semibold text-slate-600 mb-1">Feedback Type</label>
-            <select
+          <FormField label="Feedback Type">
+            <Select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white"
-            >
-              <option value="">All Types</option>
-              {FEEDBACK_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </div>
+              options={[
+                { value: '', label: 'All Types' },
+                ...FEEDBACK_TYPES,
+              ]}
+            />
+          </FormField>
 
-          <div>
-            <label className="block font-semibold text-slate-600 mb-1">Status</label>
-            <select
+          <FormField label="Status">
+            <Select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white"
-            >
-              <option value="">All Statuses</option>
-              <option value="PENDING">PENDING</option>
-              <option value="IN_REVIEW">IN_REVIEW</option>
-              <option value="RESOLVED">RESOLVED</option>
-              <option value="REJECTED">REJECTED</option>
-            </select>
-          </div>
+              options={[
+                { value: '', label: 'All Statuses' },
+                { value: 'PENDING', label: 'PENDING' },
+                { value: 'IN_REVIEW', label: 'IN REVIEW' },
+                { value: 'RESOLVED', label: 'RESOLVED' },
+                { value: 'REJECTED', label: 'REJECTED' },
+              ]}
+            />
+          </FormField>
 
-          <div>
-            <label className="block font-semibold text-slate-600 mb-1">Priority</label>
-            <select
+          <FormField label="Priority">
+            <Select
               value={selectedPriority}
               onChange={(e) => setSelectedPriority(e.target.value)}
-              className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white"
-            >
-              <option value="">All Priorities</option>
-              <option value="LOW">LOW</option>
-              <option value="MEDIUM">MEDIUM</option>
-              <option value="HIGH">HIGH</option>
-              <option value="CRITICAL">CRITICAL</option>
-            </select>
-          </div>
+              options={[
+                { value: '', label: 'All Priorities' },
+                { value: 'LOW', label: 'LOW' },
+                { value: 'MEDIUM', label: 'MEDIUM' },
+                { value: 'HIGH', label: 'HIGH' },
+                { value: 'CRITICAL', label: 'CRITICAL' },
+              ]}
+            />
+          </FormField>
 
           <div className="flex items-end">
-            <button
+            <Button
               type="submit"
-              className="w-full py-2 px-4 bg-brand-blue hover:bg-brand-hoverBlue text-white font-semibold rounded-lg text-xs shadow transition flex items-center justify-center gap-1.5"
+              variant="secondary"
+              icon={Search}
+              className="w-full"
             >
-              <Search className="w-3.5 h-3.5" />
-              <span>Filter Items</span>
-            </button>
+              Filter Feed
+            </Button>
           </div>
         </form>
       </div>
 
-      {/* Feedback Feed / Table */}
-      <div className="card-surface p-6 space-y-4">
+      {/* Feedback Feed */}
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold text-navy-900 flex items-center gap-2">
             <MessageCircle className="w-4 h-4 text-brand-blue" />
             Feedback Submissions ({pagination.total} Records)
           </h2>
-          <span className="text-[11px] text-slate-400 font-mono">
+          <span className="text-xs text-slate-400 font-mono">
             Page {pagination.page} of {pagination.totalPages}
           </span>
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-slate-400 text-xs">Loading feedback feed...</div>
+          <ListSkeleton count={4} />
         ) : feedbacks.length === 0 ? (
-          <div className="py-12 text-center text-slate-500 text-xs">No feedback matches your query.</div>
+          <EmptyState
+            icon={MessageSquare}
+            title="No Feedback Records Found"
+            description="No feedback submissions match your active filter criteria. Try adjusting filters or submit a new inquiry."
+            actionLabel="Submit Feedback"
+            onAction={() => setIsSubmitModalOpen(true)}
+          />
         ) : (
           <div className="space-y-4">
             {feedbacks.map((item) => (
               <div
                 key={item._id}
-                className="p-5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition space-y-3"
+                className="card-surface p-5 hover:border-slate-300 transition space-y-3"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    {getStatusBadge(item.status)}
-                    {getPriorityBadge(item.priority)}
-                    <span className="text-xs font-bold text-navy-900">{item.feedbackType.replace(/_/g, ' ')}</span>
-                    <span className="text-[11px] text-slate-400 font-mono">• {item.category}</span>
+                    <Badge variant={item.status}>{item.status}</Badge>
+                    <Badge variant={item.priority}>{item.priority}</Badge>
+                    <span className="text-xs font-bold text-navy-900 bg-slate-100 px-2 py-0.5 rounded">
+                      {item.feedbackType.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-xs text-slate-500 font-medium">• {item.category}</span>
                     {item.rating && (
                       <div className="flex items-center gap-0.5 text-amber-400">
                         {[...Array(item.rating)].map((_, i) => (
@@ -437,7 +381,7 @@ export default function Feedback() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+                  <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
                     <User className="w-3.5 h-3.5 text-slate-400" />
                     <span>{item.userId?.name} ({item.userId?.role})</span>
                     <span>• {new Date(item.createdAt).toLocaleDateString()}</span>
@@ -450,8 +394,8 @@ export default function Feedback() {
                 </div>
 
                 {item.relatedCaseId && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded text-[11px] text-blue-800 font-mono">
-                    <Briefcase className="w-3 h-3" />
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800 font-mono">
+                    <Briefcase className="w-3.5 h-3.5" />
                     <span>Linked Case: {item.relatedCaseId.caseNumber}</span>
                   </div>
                 )}
@@ -470,295 +414,229 @@ export default function Feedback() {
                         </span>
                       )}
                     </div>
-                    <p className="text-emerald-900 text-xs">{item.adminResponse}</p>
+                    <p className="text-emerald-950 text-xs">{item.adminResponse}</p>
                   </div>
                 )}
 
                 {/* Admin Triage Action Button */}
                 {isAdmin && (
-                  <div className="pt-2 flex justify-end">
-                    <button
+                  <div className="pt-2 flex justify-end border-t border-slate-100">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={ShieldCheck}
                       onClick={() => openTriageModal(item)}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-navy-900 hover:text-white rounded-lg text-xs font-semibold text-slate-700 transition"
                     >
                       Triage & Respond
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
             ))}
-          </div>
-        )}
 
-        {/* Pagination Controls */}
-        {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100 text-xs">
-            <button
-              disabled={page <= 1}
-              onClick={() => {
-                const prev = Math.max(page - 1, 1);
-                setPage(prev);
-                fetchFeedbacks(prev);
-              }}
-              className="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span>Previous</span>
-            </button>
-
-            <span className="text-slate-500 font-medium">
-              Page {pagination.page} of {pagination.totalPages}
-            </span>
-
-            <button
-              disabled={page >= pagination.totalPages}
-              onClick={() => {
-                const next = page + 1;
-                setPage(next);
-                fetchFeedbacks(next);
-              }}
-              className="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50"
-            >
-              <span>Next</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {/* Pagination Controls */}
+            {pagination.totalPages > 1 && (
+              <Pagination
+                currentPage={pagination.page}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.total}
+                pageSize={pagination.limit}
+                onPageChange={(p) => {
+                  setPage(p);
+                  fetchFeedbacks(p);
+                }}
+              />
+            )}
           </div>
         )}
       </div>
 
       {/* SUBMIT FEEDBACK MODAL */}
-      {isSubmitModalOpen && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-base text-navy-900 flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-brand-blue" />
-                Submit Feedback or Report Issue
-              </h3>
-              <button onClick={() => setIsSubmitModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <Modal
+        isOpen={isSubmitModalOpen}
+        onClose={() => setIsSubmitModalOpen(false)}
+        title="Submit Feedback or Report Issue"
+        subtitle="Log operational suggestions, feature requests, or technical bug reports to station administrators."
+        size="md"
+      >
+        <form onSubmit={handleSubmitFeedback} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Feedback Type" required>
+              <Select
+                value={formData.feedbackType}
+                onChange={(e) => setFormData({ ...formData, feedbackType: e.target.value })}
+                options={FEEDBACK_TYPES}
+              />
+            </FormField>
 
-            <form onSubmit={handleSubmitFeedback} className="p-6 space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Feedback Type</label>
-                  <select
-                    value={formData.feedbackType}
-                    onChange={(e) => setFormData({ ...formData, feedbackType: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white"
-                  >
-                    {FEEDBACK_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Category</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white"
-                  >
-                    {CATEGORIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Subject</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Summary of issue or proposal..."
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Detailed Description</label>
-                <textarea
-                  rows={4}
-                  required
-                  placeholder="Provide comprehensive details, steps to reproduce, or workflow suggestions..."
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Satisfaction Rating</label>
-                  <div className="flex items-center gap-1 pt-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        type="button"
-                        key={star}
-                        onClick={() => setFormData({ ...formData, rating: star })}
-                        className="p-1 hover:scale-110 transition"
-                      >
-                        <Star
-                          className={`w-5 h-5 ${
-                            star <= formData.rating
-                              ? 'text-amber-400 fill-amber-400'
-                              : 'text-slate-300'
-                          }`}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Priority</label>
-                  <select
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white"
-                  >
-                    <option value="LOW">LOW</option>
-                    <option value="MEDIUM">MEDIUM</option>
-                    <option value="HIGH">HIGH</option>
-                    <option value="CRITICAL">CRITICAL</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Optional Linked Case</label>
-                <select
-                  value={formData.relatedCaseId}
-                  onChange={(e) => setFormData({ ...formData, relatedCaseId: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white"
-                >
-                  <option value="">None (General Station Feedback)</option>
-                  {cases.map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.caseNumber} - {c.summary}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsSubmitModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg font-semibold hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-4 py-2 bg-brand-blue hover:bg-brand-hoverBlue text-white font-semibold rounded-lg shadow transition disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{submitting ? 'Submitting...' : 'Submit Feedback'}</span>
-                </button>
-              </div>
-            </form>
+            <FormField label="Category" required>
+              <Select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                options={CATEGORIES.map((c) => ({ value: c, label: c }))}
+              />
+            </FormField>
           </div>
-        </div>
-      )}
+
+          <FormField label="Subject" required>
+            <Input
+              required
+              placeholder="Summary of issue or proposal..."
+              value={formData.subject}
+              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+            />
+          </FormField>
+
+          <FormField label="Detailed Description" required>
+            <Textarea
+              rows={4}
+              required
+              placeholder="Provide comprehensive details, steps to reproduce, or workflow suggestions..."
+              value={formData.message}
+              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+            />
+          </FormField>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Satisfaction Rating">
+              <div className="flex items-center gap-1.5 pt-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    type="button"
+                    key={star}
+                    onClick={() => setFormData({ ...formData, rating: star })}
+                    className="p-1 hover:scale-110 transition rounded focus:outline-none focus:ring-1 focus:ring-brand-blue"
+                  >
+                    <Star
+                      className={`w-6 h-6 ${
+                        star <= formData.rating
+                          ? 'text-amber-400 fill-amber-400'
+                          : 'text-slate-300'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </FormField>
+
+            <FormField label="Priority" required>
+              <Select
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                options={[
+                  { value: 'LOW', label: 'LOW' },
+                  { value: 'MEDIUM', label: 'MEDIUM' },
+                  { value: 'HIGH', label: 'HIGH' },
+                  { value: 'CRITICAL', label: 'CRITICAL' },
+                ]}
+              />
+            </FormField>
+          </div>
+
+          <FormField label="Optional Linked Case">
+            <Select
+              value={formData.relatedCaseId}
+              onChange={(e) => setFormData({ ...formData, relatedCaseId: e.target.value })}
+              options={[
+                { value: '', label: 'None (General Station Feedback)' },
+                ...cases.map((c) => ({
+                  value: c._id,
+                  label: `${c.caseNumber} - ${c.summary ? c.summary.substring(0, 40) : 'Case'}`,
+                })),
+              ]}
+            />
+          </FormField>
+
+          <div className="pt-4 border-t border-slate-200 flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setIsSubmitModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              icon={Send}
+              loading={submitting}
+            >
+              Submit Feedback
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* ADMIN TRIAGE & RESPONSE MODAL */}
-      {isTriageModalOpen && selectedFeedback && (
-        <div className="fixed inset-0 bg-navy-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden">
-            <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-base text-navy-900 flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-brand-blue" />
-                Feedback Triage & Resolution
-              </h3>
-              <button onClick={() => setIsTriageModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
+      {selectedFeedback && (
+        <Modal
+          isOpen={isTriageModalOpen}
+          onClose={() => setIsTriageModalOpen(false)}
+          title="Feedback Triage & Official Resolution"
+          subtitle={`Reviewing submission from ${selectedFeedback.userId?.name || 'Officer'}`}
+          size="md"
+        >
+          <form onSubmit={handleTriageSubmit} className="space-y-4">
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+              <p className="font-bold text-navy-900 text-xs">{selectedFeedback.subject}</p>
+              <p className="text-slate-600 text-xs leading-relaxed">{selectedFeedback.message}</p>
+              <div className="flex items-center gap-2 text-[11px] text-slate-400 pt-1 font-mono">
+                <span>From: {selectedFeedback.userId?.name}</span>
+                <span>• {new Date(selectedFeedback.createdAt).toLocaleString()}</span>
+              </div>
             </div>
 
-            <form onSubmit={handleTriageSubmit} className="p-6 space-y-4 text-xs">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                <p className="font-bold text-navy-900 text-xs">{selectedFeedback.subject}</p>
-                <p className="text-slate-600 text-[11px]">{selectedFeedback.message}</p>
-                <div className="flex items-center gap-2 text-[10px] text-slate-400 pt-1 font-mono">
-                  <span>From: {selectedFeedback.userId?.name}</span>
-                  <span>• {new Date(selectedFeedback.createdAt).toLocaleString()}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Status Workflow</label>
-                  <select
-                    value={triageData.status}
-                    onChange={(e) => setTriageData({ ...triageData, status: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white"
-                  >
-                    <option value="PENDING">PENDING</option>
-                    <option value="IN_REVIEW">IN_REVIEW</option>
-                    <option value="RESOLVED">RESOLVED</option>
-                    <option value="REJECTED">REJECTED</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Priority</label>
-                  <select
-                    value={triageData.priority}
-                    onChange={(e) => setTriageData({ ...triageData, priority: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white"
-                  >
-                    <option value="LOW">LOW</option>
-                    <option value="MEDIUM">MEDIUM</option>
-                    <option value="HIGH">HIGH</option>
-                    <option value="CRITICAL">CRITICAL</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Official Administration Response</label>
-                <textarea
-                  rows={4}
-                  placeholder="Provide resolution details, explanation, or follow-up instructions..."
-                  value={triageData.adminResponse}
-                  onChange={(e) => setTriageData({ ...triageData, adminResponse: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:bg-white"
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <FormField label="Status Workflow" required>
+                <Select
+                  value={triageData.status}
+                  onChange={(e) => setTriageData({ ...triageData, status: e.target.value })}
+                  options={[
+                    { value: 'PENDING', label: 'PENDING' },
+                    { value: 'IN_REVIEW', label: 'IN REVIEW' },
+                    { value: 'RESOLVED', label: 'RESOLVED' },
+                    { value: 'REJECTED', label: 'REJECTED' },
+                  ]}
                 />
-              </div>
+              </FormField>
 
-              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsTriageModalOpen(false)}
-                  className="px-4 py-2 border border-slate-200 rounded-lg font-semibold hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={triaging}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg shadow transition disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>{triaging ? 'Saving...' : 'Update & Resolve'}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+              <FormField label="Priority" required>
+                <Select
+                  value={triageData.priority}
+                  onChange={(e) => setTriageData({ ...triageData, priority: e.target.value })}
+                  options={[
+                    { value: 'LOW', label: 'LOW' },
+                    { value: 'MEDIUM', label: 'MEDIUM' },
+                    { value: 'HIGH', label: 'HIGH' },
+                    { value: 'CRITICAL', label: 'CRITICAL' },
+                  ]}
+                />
+              </FormField>
+            </div>
+
+            <FormField label="Official Administration Response" required>
+              <Textarea
+                rows={4}
+                required
+                placeholder="Provide resolution details, explanation, or follow-up instructions..."
+                value={triageData.adminResponse}
+                onChange={(e) => setTriageData({ ...triageData, adminResponse: e.target.value })}
+              />
+            </FormField>
+
+            <div className="pt-4 border-t border-slate-200 flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setIsTriageModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                variant="success"
+                icon={CheckCircle2}
+                loading={triaging}
+              >
+                Update & Resolve
+              </Button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );
 }
+
