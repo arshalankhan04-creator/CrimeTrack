@@ -53,51 +53,79 @@ export default function StatCard({
 
   const scheme = colorMap[resolvedColor] || colorMap.blue;
 
+  // Robust trend parsing (supports both string and object trend prop)
+  const trendDir = typeof trend === 'object' && trend !== null
+    ? (trend.direction || (trend.isPositive ? 'up' : 'down'))
+    : trend;
+  const trendText = typeof trend === 'object' && trend !== null
+    ? (trend.label || trend.value || trendLabel)
+    : trendLabel;
+
+  const displayValue = value !== undefined && value !== null ? value : 0;
+  const tooltipValue = typeof displayValue === 'string' || typeof displayValue === 'number'
+    ? String(displayValue)
+    : '';
+
   if (loading) {
     return (
-      <div className={`card-surface p-4 animate-pulse min-w-0 w-full ${className}`}>
-        <div className="flex items-center justify-between">
-          <div className="h-3 w-20 bg-slate-200 rounded"></div>
-          <div className="w-8 h-8 rounded-lg bg-slate-200"></div>
+      <div className={`card-surface p-4 animate-pulse min-w-0 w-full overflow-hidden flex flex-col justify-between ${className}`}>
+        <div className="flex items-start justify-between gap-2 min-w-0">
+          <div className="h-3.5 w-16 sm:w-20 bg-slate-200 rounded min-w-0"></div>
+          <div className="w-8 h-8 rounded-lg bg-slate-200 shrink-0"></div>
         </div>
-        <div className="h-7 w-16 bg-slate-200 rounded mt-3"></div>
-        <div className="h-3 w-28 bg-slate-200 rounded mt-2"></div>
+        <div className="h-6 w-14 sm:w-16 bg-slate-200 rounded mt-3"></div>
+        <div className="h-3 w-20 sm:w-24 bg-slate-200 rounded mt-2"></div>
       </div>
     );
   }
 
   return (
-    <div className={`card-surface p-4.5 flex flex-col justify-between min-w-0 w-full ${className}`}>
+    <div className={`card-surface p-4 flex flex-col justify-between min-w-0 w-full overflow-hidden h-full ${className}`}>
       <div className="flex items-start justify-between gap-2 min-w-0">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate" title={title}>
+        <span
+          className="text-[11px] font-bold uppercase tracking-wider text-slate-500 leading-snug break-words line-clamp-2 min-w-0 flex-1"
+          title={title}
+        >
           {title}
         </span>
         {Icon && (
-          <div className={`p-2 rounded-lg border shrink-0 ${scheme.iconBg}`}>
-            <Icon className="w-4 h-4" />
+          <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${scheme.iconBg}`}>
+            <Icon className="w-4 h-4 shrink-0" />
           </div>
         )}
       </div>
 
       <div className="mt-2.5 min-w-0">
-        <p className={`text-2xl font-bold font-mono tracking-tight truncate ${scheme.valueColor}`}>
-          {value !== undefined && value !== null ? value : 0}
+        <p
+          className={`text-xl sm:text-2xl font-bold font-mono tracking-tight truncate ${scheme.valueColor}`}
+          title={tooltipValue}
+        >
+          {displayValue}
         </p>
 
-        {(subtitle || trend) && (
-          <div className="flex items-center gap-1.5 mt-1 text-[11px] min-w-0">
-            {trend && (
-              <span className={`inline-flex items-center font-semibold shrink-0 ${
-                trend === 'up' ? 'text-emerald-600' : trend === 'down' ? 'text-rose-600' : 'text-slate-500'
-              }`}>
-                {trend === 'up' && <TrendingUp className="w-3 h-3 mr-0.5" />}
-                {trend === 'down' && <TrendingDown className="w-3 h-3 mr-0.5" />}
-                {trend === 'neutral' && <Minus className="w-3 h-3 mr-0.5" />}
-                {trendLabel}
+        {(subtitle || trendDir) && (
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-1 text-[11px] min-w-0">
+            {trendDir && (
+              <span
+                className={`inline-flex items-center font-semibold shrink-0 ${
+                  trendDir === 'up'
+                    ? 'text-emerald-600'
+                    : trendDir === 'down'
+                    ? 'text-rose-600'
+                    : 'text-slate-500'
+                }`}
+              >
+                {trendDir === 'up' && <TrendingUp className="w-3 h-3 mr-0.5 shrink-0" />}
+                {trendDir === 'down' && <TrendingDown className="w-3 h-3 mr-0.5 shrink-0" />}
+                {trendDir === 'neutral' && <Minus className="w-3 h-3 mr-0.5 shrink-0" />}
+                {trendText}
               </span>
             )}
             {subtitle && (
-              <span className="text-slate-500 font-medium truncate block min-w-0" title={subtitle}>
+              <span
+                className="text-slate-500 font-medium truncate block min-w-0 flex-1"
+                title={subtitle}
+              >
                 {subtitle}
               </span>
             )}
