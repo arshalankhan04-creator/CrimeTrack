@@ -343,7 +343,7 @@ export default function Reports() {
 
       {/* Summary KPI Banner */}
       {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 print:grid-cols-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 print:hidden">
           <StatCard
             title="Total FIRs"
             value={summary.totalFIRs || 0}
@@ -373,24 +373,32 @@ export default function Reports() {
         </div>
       )}
 
-      {/* Official Police Printable Header (Visible only when printed) */}
-      <div className="hidden print:block text-center border-b-2 border-slate-900 pb-4 mb-6">
-        <h1 className="text-2xl font-bold uppercase tracking-wider text-slate-900">
-          State Police Department — Official Record Dossier
-        </h1>
-        <p className="text-xs text-slate-600 mt-1">
-          CrimeTrack Law Enforcement & Investigation Management System
-        </p>
-        <div className="flex justify-between items-center text-[10px] font-mono text-slate-500 mt-4 border-t border-slate-300 pt-2">
-          <span>Report Type: {selectedReportType.toUpperCase()}</span>
-          <span>Printed By: {user?.name} ({user?.employeeId})</span>
-          <span>Date: {new Date().toLocaleString()}</span>
+      {/* Official Police Printable Header (Visible only on print/export paper) */}
+      <div className="hidden print:block border-b-2 border-slate-900 pb-3 mb-4 font-sans">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-300">
+          <div>
+            <h1 className="text-xl font-bold uppercase tracking-wider text-slate-900">
+              State Police Department — Official Record Dossier
+            </h1>
+            <p className="text-xs text-slate-600 mt-0.5">
+              CrimeTrack Law Enforcement & Investigation Management Platform
+            </p>
+          </div>
+          <div className="text-right text-[11px] font-mono text-slate-700">
+            <p className="font-bold text-slate-900">REPORT: {selectedReportType.toUpperCase()} REGISTRY</p>
+            <p className="text-slate-500">Security Classification: Confidential</p>
+          </div>
+        </div>
+        <div className="flex justify-between items-center text-[10px] font-mono text-slate-600 pt-2">
+          <span>Printed By: {user?.name} ({user?.employeeId || user?.role})</span>
+          <span>Timestamp: {new Date().toLocaleString()}</span>
+          <span>Matched Records: {reportData.length}</span>
         </div>
       </div>
 
       {/* Live Data Preview Table */}
-      <div className="card-surface overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+      <div className="card-surface overflow-hidden print:border print:border-slate-300 print:rounded-none">
+        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between print:hidden">
           <h2 className="text-xs font-bold text-navy-950 uppercase tracking-wider flex items-center gap-2">
             <FileSpreadsheet className="w-4 h-4 text-brand-blue" />
             Dataset Preview ({reportData.length} Records)
@@ -409,7 +417,7 @@ export default function Reports() {
             description="No records found matching the specified parameters and date bounds."
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto print:overflow-visible">
             {/* FIR Table */}
             {selectedReportType === 'firs' && (
               <table className="app-table">

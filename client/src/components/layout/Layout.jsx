@@ -12,22 +12,26 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
       {/* Sticky Top Navbar */}
-      <Navbar
-        onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
-        onOpenProfile={() => setIsProfileModalOpen(true)}
-      />
-
-      <div className="flex-1 flex w-full relative">
-        {/* Desktop Fixed Sidebar & Mobile Drawer */}
-        <Sidebar
-          mobileOpen={mobileMenuOpen}
-          onCloseMobile={() => setMobileMenuOpen(false)}
+      <div className="print:hidden">
+        <Navbar
+          onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
           onOpenProfile={() => setIsProfileModalOpen(true)}
         />
+      </div>
+
+      <div className="flex-1 flex w-full relative print:block">
+        {/* Desktop Fixed Sidebar & Mobile Drawer */}
+        <div className="print:hidden">
+          <Sidebar
+            mobileOpen={mobileMenuOpen}
+            onCloseMobile={() => setMobileMenuOpen(false)}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
+          />
+        </div>
 
         {/* Scrollable Main Content Container */}
-        <div className="flex-1 md:pl-64 flex flex-col min-w-0 w-full min-h-[calc(100vh-4rem)]">
-          <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0">
+        <div className="flex-1 md:pl-64 print:pl-0 flex flex-col min-w-0 w-full min-h-[calc(100vh-4rem)] print:min-h-0">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8 print:p-0 print:m-0 max-w-7xl print:max-w-none w-full mx-auto min-w-0">
             {children}
           </main>
         </div>
